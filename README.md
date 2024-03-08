@@ -1,7 +1,7 @@
 # About
 __El Hadj__ is a website that is meant to facilitate the procedure of Hadj, it is the theme for the __1CS Project__ of the _Higher School of Computer Science at Sidi Bel Abbes (__ESI SBA__)_.
 
-this repository is meant to contain the frontend part of the project.
+this repository is meant to contain the backend part of the project.
 # Contributers
 - Abahri Khalida (`Backend Developer`)
 - Benahmed Firdaws Sotra (`Frontend Developer`)
