@@ -1,5 +1,5 @@
 # About
-__El Hadj__ is a website that is meant to facilitate the procedure of Hadj, it is the theme for the __1CS Project__ of the _Higher School of Computer Science at Sidi Bel Abbes (__ESI SBA__)_.
+__El Hajj__ is the __1CS multidisciplinairy Project__ of the _Higher School of Computer Science at Sidi Bel Abbes (__ESI SBA__)_ , its a website that facilitates the procedure of Hajj in Algeria
 
 this repository is meant to contain the backend part of the project.
 # Contributers
