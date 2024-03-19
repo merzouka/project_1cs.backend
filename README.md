@@ -10,5 +10,5 @@ this repository is meant to contain the backend part of the project.
 - Hallouche Abdessamad (`Frontend Developer`)
 - Merzouka Youness (`Frontend Developer`)
 # Tools
-- Next JS
-- React JS
+- Django
+- Python
