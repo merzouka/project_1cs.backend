@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     'rest_framework',
     'rest_framework.authtoken',
     'authentication',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -105,6 +107,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# AUTH_USER_MODEL = "authentication.User"
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -129,9 +132,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_FROM_USER = 'chellalasa2004@gmail.com'
-EMAIL_HOST = 'smtp.elasticemail.com'
-EMAIL_HOST_USER = 'chellalasa2004@gmail.com'
-EMAIL_HOST_PASSWORD = 'AF8E755ABD8060153478B3A891454554ADE3'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'celeq.elhajj@gmail.com'
+EMAIL_HOST_PASSWORD = 'crlumqvyncfcigdp '
 EMAIL_USE_TLS = True
-EMAIL_PORT = 2525
+
+
+# cors
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]

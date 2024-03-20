@@ -99,3 +99,12 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return self.email   
+
+class PasswordReset(models.Model):
+    objects = models.Manager()
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="password reset's user",
+        null=True
+    )
