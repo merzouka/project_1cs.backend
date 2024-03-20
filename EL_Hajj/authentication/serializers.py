@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import elHadj
+from .models import User
 
 
-class elHadjSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta :
-        model = elHadj
-        fields = '__all__'
+        model = User
+        exclude = ["password"]
     
