@@ -31,7 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "corsheaders",
+    'Draw_Registration',
+    'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'authentication',
