@@ -15,6 +15,8 @@ from rest_framework.response import Response
 
 from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
+from django.views.decorators.csrf import csrf_exempt
+
 
 @api_view(["POST"])
 @parser_classes([JSONParser])
@@ -56,21 +58,20 @@ def verify_email(request):
     user.save()
     return Response(JSONRenderer().render({ "message": "Email verified" }), 200)
     
-    
+@csrf_exempt    
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def register(request):
-    id_role = request.data.get('id_role')
     email = request.data.get('email')
     password = request.data.get('password')
 
-    if not id_role or not email or not password:
+    if not email or not password:
         return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
 
     try:
         user = CustomUser.objects.create_user(email=email, password=password)
-        user.id_role.set(id_role)  # Assuming id_role is a list of role IDs
+          # Assuming id_role is a list of role IDs
         user.save()
         serializer = CustomUserSerializer(user)
         return Response(serializer.data, 200)
@@ -152,11 +153,11 @@ def login_user(request):
 
         if user is not None:
             login(request, user)
-            return Response(JSONRenderer().render({'message': 'Login successful'}), 200)
+            return Response({'message': 'Login successful'},status=200)
         else:
-            return JsonResponse(JSONRenderer().render({'error': 'Invalid email or password'}), 401)
+            return Response({'error': 'Invalid email or password'}, status=401)
     else:
-        return JsonResponse(JSONRenderer().render({'error': 'Email and password are required'}), 400)
+        return Response({'error': 'Email and password are required'}, status=400)
 
 
 def logout_user(request):
