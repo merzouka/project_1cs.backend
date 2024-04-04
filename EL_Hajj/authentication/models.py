@@ -120,7 +120,7 @@ class utilisateur(AbstractBaseUser):
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
     
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', 'dateOfBirth', 'province', 'city', 'gender']
-    
+
     
 
 class PasswordReset(models.Model):
