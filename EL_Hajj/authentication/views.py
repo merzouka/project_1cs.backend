@@ -153,11 +153,11 @@ def login_user(request):
 
         if user is not None:
             login(request, user)
-            return Response(JSONRenderer().render({'message': 'Login successful'}), 200)
+            return Response({'message': 'Login successful'},status=200)
         else:
-            return JsonResponse(JSONRenderer().render({'error': 'Invalid email or password'}), 401)
+            return Response({'error': 'Invalid email or password'}, status=401)
     else:
-        return JsonResponse(JSONRenderer().render({'error': 'Email and password are required'}), 400)
+        return Response({'error': 'Email and password are required'}, status=400)
 
 
 def logout_user(request):
