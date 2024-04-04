@@ -62,17 +62,16 @@ def verify_email(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def register(request):
-    id_role = request.data.get('id_role')
     email = request.data.get('email')
     password = request.data.get('password')
 
-    if not id_role or not email or not password:
+    if not email or not password:
         return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
 
     try:
         user = CustomUser.objects.create_user(email=email, password=password)
-        user.id_role.set(id_role)  # Assuming id_role is a list of role IDs
+          # Assuming id_role is a list of role IDs
         user.save()
         serializer = CustomUserSerializer(user)
         return Response(serializer.data, 200)
