@@ -15,6 +15,8 @@ from rest_framework.response import Response
 
 from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
+from django.views.decorators.csrf import csrf_exempt
+
 
 @api_view(["POST"])
 @parser_classes([JSONParser])
@@ -56,7 +58,7 @@ def verify_email(request):
     user.save()
     return Response(JSONRenderer().render({ "message": "Email verified" }), 200)
     
-    
+@csrf_exempt    
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def register(request):

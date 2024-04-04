@@ -3,10 +3,10 @@
 DATABASES = {
   'default': {
     'ENGINE': 'django.db.backends.postgresql',
-    'NAME': 'EL_Hajj_db',
-    'USER': 'EL_Hajj_db_owner',
-    'PASSWORD': 'huta9wRAo5IE',
-    'HOST':'ep-soft-forest-a2glylyv-pooler.eu-central-1.aws.neon.tech',
+    'NAME': 'EL_Hajj',
+    'USER': 'EL_Hajj_owner',
+    'PASSWORD': 'JKhUktN7QlZ3',
+    'HOST':'ep-summer-term-a292jq9j.eu-central-1.aws.neon.tech',
     'PORT': '5432',
     'OPTIONS': {
       'sslmode': 'require',
