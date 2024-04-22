@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tirage WebSocket Example</title>
+</head>
+<body>
+    <button id="startButton">Start Tirage</button>
+    <div id="winnersList"></div>
+
+    <script>
+        // Establish WebSocket connection
+        const socket = new WebSocket('ws://localhost:8000/ws/tirage/');
+
+        // Define event listener for successful connection
+        socket.onopen = function(event) {
+            console.log('WebSocket connection established.');
+        };
+
+        // Define event listener for messages received from the server 
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.action === 'winners') {
+                const winnerId = data.winner;
+                const winnerElement = document.createElement('p');
+                winnerElement.textContent = 'Winner: ' + winnerId;
+                document.getElementById('winnersList').appendChild(winnerElement);
+            }
+        };
+
+        // Define event listener for button click to start tirage
+        document.getElementById('startButton').addEventListener('click', function() {
+            const message = {
+                action: 'melange',  // Action to start tirage
+                id_utilisateur: 1 // Replace with actual user ID
+            };
+            // Send message to the server
+            socket.send(JSON.stringify(message));
+        });
+    </script>
+</body>
+</html>

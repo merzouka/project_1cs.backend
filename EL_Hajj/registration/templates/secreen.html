@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melange Winners</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <button id="melangeBtn">Melange Winners</button>
+
+    <script>
+        $(document).ready(function(){
+            $("#melangeBtn").click(function(){
+                var socket = new WebSocket("ws://localhost:8000/ws/tirage/");
+                
+                socket.onopen = function(event) {
+                    console.log("WebSocket connection established.");
+                    var message = {
+                        action: "start_tirage",
+                        id_utilisateur: 1 // Replace with the actual utilisateur ID
+                    };
+                    socket.send(JSON.stringify(message));
+                };
+
+                socket.onmessage = function(event) {
+                    var data = JSON.parse(event.data);
+                    console.log("Received data:", data);
+                    // Handle received data, e.g., display winners
+                    $("#result").text(JSON.stringify(data));
+                };
+
+                socket.onclose = function(event) {
+                    console.log("WebSocket connection closed.");
+                };
+            });
+        });
+    </script>
+    <div id="result"></div>
+
+</body>
+</html>

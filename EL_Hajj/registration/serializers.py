@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import Haaj , Haaja
+from .models import Haaj , Haaja,Tirage,Baladiya
 from django.utils import timezone
-from authentication.models import utilisateur 
+from authentication.models import user
 
 
 class HaajSerializer(serializers.ModelSerializer):
@@ -52,7 +52,17 @@ class HaajaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The passport expiration date must be at least six months in the future.")
         return value
     
+class BaladiyaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Baladiya
+        fields = ['name', 'id_utilisateur', 'tirage'] 
 
+
+class TirageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tirage
+        fields = '__all__'
+ 
         
         
         
