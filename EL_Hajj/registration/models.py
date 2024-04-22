@@ -3,7 +3,39 @@ from django.db import models
 from django.db import models
 from authentication.models import utilisateur  
 
-Nationalities = [('Algérienne','Algérienne'),('Autre','Autre')]
+Nationalities = [
+    ('Algérienne', 'Algérien'),
+    ('Bahreïnienne', 'Bahreïnien'),
+    ('Bangladaise', 'Bangladais'),
+    ('Comorienne', 'Comorien'),
+    ('Égyptienne', 'Égyptien'),
+    ('Émirienne', 'Émirien'),
+    ('Indonésienne', 'Indonésien'),
+    ('Jordanienne', 'Jordanien'),
+    ('Koweïtienne', 'Koweïtien'),
+    ('Libanaise', 'Libanais'),
+    ('Libyenne', 'Libyen'),
+    ('Malaisienne', 'Malaisien'),
+    ('Maldivienne', 'Maldivien'),
+    ('Malienne', 'Malien'),
+    ('Marocaine', 'Marocain'),
+    ('Mauritanienne', 'Mauritanien'),
+    ('Nigérienne', 'Nigérien'),
+    ('Omanaise', 'Omanais'),
+    ('Pakistanaise', 'Pakistanais'),
+    ('Palestinienne', 'Palestinien'),
+    ('Qatarienne', 'Qatarien'),
+    ('Saoudienne', 'Saoudien'),
+    ('Sénégalaise', 'Sénégalais'),
+    ('Somalienne', 'Somalien'),
+    ('Soudanaise', 'Soudanais'),
+    ('Syrienne', 'Syrien'),
+    ('Tchadienne', 'Tchadien'),
+    ('Tunisienne', 'Tunisien'),
+    ('Turque', 'Turc'),
+    ('Yéménite', 'Yéménite')
+]
+
 
 class Haaj(models.Model):
     user = models.OneToOneField(utilisateur,  on_delete=models.CASCADE)
