@@ -1,12 +1,12 @@
 from random import randint, random
 from django.core.mail import send_mail
 from django.http import JsonResponse
-from django.shortcuts import redirect
-
-from authentication.serializers import UtilisateurSerializer,CustomUserSerializer
-from .models import PasswordReset, CustomUser,utilisateur
+import json
+from django.contrib.auth.hashers import make_password
+from authentication.serializers import userSerializer
+from .models import PasswordReset, user
 from rest_framework import status
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404,render
 
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
@@ -24,7 +24,7 @@ def send_verification_email(request):
     email = request.data["email"]
     # email attached to account
     try:
-        user: CustomUser = CustomUser.objects.get(email=email)
+        user_: user = user.objects.get(email=email)
     except:
         return Response(JSONRenderer().render({ "message": "invalid address" }), 400)
 
@@ -36,8 +36,8 @@ def send_verification_email(request):
             "celeq.elhajj@gmail.com",
             [email]
         )
-        user.code = f"{code}"
-        user.save()
+        user_.code = f"{code}"
+        user_.save()
         return Response(JSONRenderer().render({ "message": "email sent" }), 200)
     except:
         return Response(JSONRenderer().render({ "message": "invalid address" }), 400)
@@ -48,47 +48,50 @@ def verify_email(request):
     email = request.data["email"]
     code = request.data["code"]
     
-    CustomUser = get_user_model()
+    user = get_user_model()
     
     try:
-        user = CustomUser.objects.get(email=email,code=code)
-    except CustomUser.DoesNotExist:
+        user = user.objects.get(email=email,code=code)
+    except user.DoesNotExist:
         return Response(JSONRenderer().render({ "message": "invalid address or code" }), 400)
     user.is_email_verified = True 
     user.save()
     return Response(JSONRenderer().render({ "message": "Email verified" }), 200)
     
 @csrf_exempt    
-@api_view(['POST'])
-@parser_classes([JSONParser])
+@api_view(['GET', 'POST'])
 def register(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
-
-    if not email or not password:
-        return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-    try:
-        user = CustomUser.objects.create_user(email=email, password=password)
-          # Assuming id_role is a list of role IDs
-        user.save()
-        serializer = CustomUserSerializer(user)
-        return Response(serializer.data, 200)
-    except Exception as e:
-        return Response(JSONRenderer().render({ "message": "error" }), 400)
+    data = request.data
+    email = data.get('email')
+    password = data.get('password')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    phone = data.get('phone')
+    dateOfBirth = data.get('dateOfBirth')
+    city = data.get('city')
+    province = data.get('province')
+    gender = data.get('gender')
     
-
-
-@api_view(['POST'])
-@parser_classes([JSONParser])
-def registerUtilisateur(request):
-    serializer = UtilisateurSerializer(data=request.data)
+    hashed_password = make_password(password)
+    
+    u = user.objects.create(
+        email = email,
+        password = hashed_password,
+        first_name = first_name,
+        last_name = last_name,
+        phone = phone,
+        dateOfBirth = dateOfBirth,
+        city = city,
+        province = province,
+        gender = gender,
+    )
+    
+    serializer = userSerializer(data=request.data)
+    
     if serializer.is_valid():
-        utilisateur = serializer.save()
-        
-        return Response(serializer.data,200)
-    return Response(serializer.errors,400)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(["POST"])
@@ -96,13 +99,13 @@ def registerUtilisateur(request):
 def send_reset_password_email(request):
     email = request.data["email"]
     try:
-        user: CustomUser = CustomUser.objects.get(email=email)
+        user_: user = user.objects.get(email=email)
     except:
         return Response(JSONRenderer().render({ "message": "invalid address" }), 400)
 
     reset = PasswordReset()
     reset.save()
-    reset.user = user
+    reset.user = user_
     reset.save()
     try:
         hello = ""
@@ -129,13 +132,13 @@ def reset_password(request):
     new_password = request.data["newPassword"]
     try:
         reset: PasswordReset = PasswordReset.objects.get(pk=reset_id)
-        user: CustomUser = CustomUser.objects.get(email=email)
-        if user._get_pk_val() != reset.user._get_pk_val():
+        user_: user = user.objects.get(email=email)
+        if user_._get_pk_val() != reset.user_._get_pk_val():
             return Response(JSONRenderer().render({ "message": "failed to reset password" }), 400)
-        if user.check_password(new_password):
+        if user_.check_password(new_password):
             return Response(JSONRenderer().render({ "message": "duplicate password" }), 409)
-        user.set_password(new_password)
-        user.save()
+        user_.set_password(new_password)
+        user_.save()
         reset.delete()
         return Response(JSONRenderer().render({ "message": "reset successful" }), 200)
     except:
@@ -149,17 +152,79 @@ def login_user(request):
     password = request.data.get('password')
 
     if email and password:
-        user = authenticate(request, username=email, password=password)
+        u= authenticate(request, username=email, password=password)
 
-        if user is not None:
-            login(request, user)
-            return Response({'message': 'Login successful'},status=200)
+        if u is not None:
+            if u.is_email_verified:
+                login(request,u)
+                return Response({'message': 'Login successful'},status=200)
+            else:
+                return Response({'message':'email is not verified'},status=400)
+            
         else:
             return Response({'error': 'Invalid email or password'}, status=401)
     else:
         return Response({'error': 'Email and password are required'}, status=400)
+    
+
+def convert_to_serializable(data):
+    """
+    Recursively convert non-serializable objects to serializable types.
+    """
+    if isinstance(data, dict):
+        return {key: convert_to_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_to_serializable(item) for item in data]
+    elif isinstance(data, user):
+        # Convert CustomUser object to a dictionary of serializable fields
+        return {
+            'id': data.id,
+            'email': data.email,
+            # Include other serializable fields of CustomUser
+        }
+    # Add more conversions as needed
+    else:
+        # Return the data as is for other types
+        return data
 
 
+   
+@csrf_exempt 
+def get_user_info(request,email):
+    if request.method == 'GET':
+            try:
+                user_ = get_object_or_404(user,emailUtilisateur=email)
+                
+                user_info = {
+                    'first_name' : user_.first_name,
+            'last_name' : user_.last_name,
+            'phone' : user_.phone,
+            'city' : user_.city,
+            'province' : user_.province,
+            'gender' : user_.gender,
+            'email' : user_.email,
+            'dateOfBirth' : user_.dateOfBirth
+                }
+                user_info = convert_to_serializable(user_info)
+                
+                return JsonResponse(user_info,content_type = 'application/json')
+            
+            except user.DoesNotExist:
+                return JsonResponse({'error':'user not found'},status=404)
+            
+    else : 
+        return JsonResponse({'error':'methode not allowed'},status=405)
+        
+        
+        
+        
+        
+        
+        
+    
+
+    
+    
 def logout_user(request):
     logout(request)
     return JsonResponse({"message": "Logout successful"})

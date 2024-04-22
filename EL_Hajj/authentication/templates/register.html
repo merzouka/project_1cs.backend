@@ -1,5 +1,5 @@
 {% block content %} {% load static %}
-
+{% load socialaccount %}
 <div class="ui grid">
   <div class="four wide column"></div>
   <div class="eight wide column">
@@ -22,45 +22,6 @@
 
             <div class="field">
               <div class="ui left icon input">
-                <i class="user icon"></i>
-                <input type="text" name="city" value="{{data.city}}" placeholder="city" />
-              </div>
-            </div>
-            <div class="field">
-                <div class="ui left icon input">
-                  <i class="lock icon"></i>
-                  <input type="text" name="province" value="{{data.province}}" placeholder="province" />
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui left icon input">
-                  <i class="lock icon"></i>
-                  <input type="text" name="first_name" value="{{data.first_name}}" placeholder="first_name" />
-                </div>
-                <div class="field">
-                    <div class="ui left icon input">
-                      <i class="lock icon"></i>
-                      <input type="text" name="last_name" value="{{data.last_name}}" placeholder="last_name" />
-                    </div>
-                    <div class="field">
-                        <div class="ui left icon input">
-                          <i class="lock icon"></i>
-                          <input type="text" name="phone" value="{{data.phone}}" placeholder="phone" />
-                        </div>
-                    <div class="field">
-                        <div class="ui left icon input">
-                          <i class="lock icon"></i>
-                          <input type="text" name="gender" value="{{data.gender}}" placeholder="gender" />
-                        </div>
-              </div>
-              <div class="field">
-                <div class="ui left icon input">
-                  <i class="lock icon"></i>
-                  <input type="date" name="dateOfBirth" value="{{data.dateOfBirth}}" placeholder="dateOfBirth" />
-                </div>
-              </div>
-            <div class="field">
-              <div class="ui left icon input">
                 <i class="lock icon"></i>
                 <input type="password" name="password" placeholder="Password" />
               </div>
@@ -77,10 +38,10 @@
               </div>
             </div>
             <button class="ui fluid large teal submit button">Submit</button>
+            <button><a href="{% provider_login_url 'google'%}?next=/">Login with google</a></button>
           </div>
 
         </form>
-    <div class="four wide column"></div>
 </div>
 </div>
 
