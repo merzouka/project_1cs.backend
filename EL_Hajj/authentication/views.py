@@ -157,7 +157,8 @@ def login_user(request):
         if u is not None:
             if u.is_email_verified:
                 login(request,u)
-                return Response({'message': 'Login successful'},status=200)
+                user_info = get_user_info(request,email)
+                return Response({'message': 'Login successful','user_info':user_info},status=200)
             else:
                 return Response({'message':'email is not verified'},status=400)
             
@@ -193,7 +194,7 @@ def convert_to_serializable(data):
 def get_user_info(request,email):
     if request.method == 'GET':
             try:
-                user_ = get_object_or_404(user,emailUtilisateur=email)
+                user_ = get_object_or_404(user,email=email)
                 
                 user_info = {
                     'first_name' : user_.first_name,
