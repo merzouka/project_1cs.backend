@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import HaajSerializer , HaajaSerializer
-from authentication.models import utilisateur 
+from authentication.models import user 
 from rest_framework.decorators import api_view, permission_classes 
 from rest_framework.permissions import IsAuthenticated
 
@@ -13,24 +13,21 @@ from rest_framework.permissions import IsAuthenticated
 def registration(request):
     authenticated_user = request.user  
     if request.method == 'GET':
-        authenticated_user = request.user
-        utilisateur_instance = get_object_or_404(utilisateur, emailUtilisateur=authenticated_user)
         utilisateur_data = {
-            'emailUtilisateur': utilisateur_instance.emailUtilisateur.email,
-            'first_name': utilisateur_instance.first_name,
-            'last_name': utilisateur_instance.last_name,
-            'dateOfBirth': utilisateur_instance.dateOfBirth,
-            'city' : utilisateur_instance.city,
-            'gender' : utilisateur_instance.gender
+            'emailUtilisateur': authenticated_user.email,
+            'first_name': authenticated_user.first_name,
+            'last_name': authenticated_user.last_name,
+            'dateOfBirth': authenticated_user.dateOfBirth,
+            'city' : authenticated_user.city,
+            'gender' : authenticated_user.gender
         }
         return JsonResponse(utilisateur_data)
     
     elif request.method == 'POST':
         authenticated_user = request.user
-        utilisateur_instance = authenticated_user.utilisateur
         serializer_data = request.data.copy() 
         
-        if utilisateur_instance.gender == 'F':  
+        if authenticated_user.gender == 'F':  
             haaja_serializer = HaajaSerializer(data=serializer_data, context={'request': request})
             if haaja_serializer.is_valid():
                 haaja_instance = haaja_serializer.save()

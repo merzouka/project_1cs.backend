@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Haaj , Haaja
 from django.utils import timezone
-from authentication.models import utilisateur 
+from authentication.models import user
 
 
 class HaajSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class HaajSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        utilisateur_instance = request.user.utilisateur  
+        utilisateur_instance = request.user
         validated_data['user'] = utilisateur_instance  
         return Haaj.objects.create(**validated_data)
         
@@ -36,7 +36,7 @@ class HaajaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        utilisateur_instance = request.user.utilisateur  
+        utilisateur_instance = request.user 
         validated_data['user'] = utilisateur_instance  
         return Haaja.objects.create(**validated_data)
         

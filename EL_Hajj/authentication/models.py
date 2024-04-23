@@ -82,7 +82,7 @@ class role(models.Model):
 class user(AbstractBaseUser):
     id_role = models.ManyToManyField(role)
     username = None
-    email = models.EmailField(max_length=254,unique=True)
+    email = models.EmailField(max_length=254,unique=True , null=False)
     is_email_verified = models.BooleanField(null=True)
     code = models.CharField(max_length=4, null=True)
     
