@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +30,9 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
+SITE_ID = 1
+
+
 
 INSTALLED_APPS = [
     'daphne',
@@ -43,11 +47,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    
+    
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -85,10 +93,17 @@ ASGI_APPLICATION = 'EL_Hajj.asgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+  'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'EL_HAJJ_L',
+    'USER': 'El_Hajj_db_owner',
+    'PASSWORD': 'JagfjOWsq37w',
+    'HOST':'ep-winter-cake-a2lxnvdu.eu-central-1.aws.neon.tech',
+    'PORT': '5432',
+    'OPTIONS': {
+      'sslmode': 'require',
+    },
+  }
 }
 
 from .db import * # noqa
@@ -146,3 +161,8 @@ EMAIL_USE_TLS = True
 
 # cors
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+)
+

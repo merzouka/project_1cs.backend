@@ -13,3 +13,4 @@ class RoleSerializer(serializers.ModelSerializer):
         model = role
         fields = ['email', 'first_name', 'last_name', 'phone', 'dateOfBirth', 'city', 'province', 'gender']
 
+
