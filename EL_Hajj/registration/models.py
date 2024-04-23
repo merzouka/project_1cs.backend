@@ -1,9 +1,41 @@
 from django.db import models
 
 from django.db import models
-from authentication.models import user
+from authentication.models import user 
 
-Nationalities = [('Algérienne','Algérienne'),('Autre','Autre')]
+Nationalities = [
+    ('Algérienne', 'Algérien'),
+    ('Bahreïnienne', 'Bahreïnien'),
+    ('Bangladaise', 'Bangladais'),
+    ('Comorienne', 'Comorien'),
+    ('Égyptienne', 'Égyptien'),
+    ('Émirienne', 'Émirien'),
+    ('Indonésienne', 'Indonésien'),
+    ('Jordanienne', 'Jordanien'),
+    ('Koweïtienne', 'Koweïtien'),
+    ('Libanaise', 'Libanais'),
+    ('Libyenne', 'Libyen'),
+    ('Malaisienne', 'Malaisien'),
+    ('Maldivienne', 'Maldivien'),
+    ('Malienne', 'Malien'),
+    ('Marocaine', 'Marocain'),
+    ('Mauritanienne', 'Mauritanien'),
+    ('Nigérienne', 'Nigérien'),
+    ('Omanaise', 'Omanais'),
+    ('Pakistanaise', 'Pakistanais'),
+    ('Palestinienne', 'Palestinien'),
+    ('Qatarienne', 'Qatarien'),
+    ('Saoudienne', 'Saoudien'),
+    ('Sénégalaise', 'Sénégalais'),
+    ('Somalienne', 'Somalien'),
+    ('Soudanaise', 'Soudanais'),
+    ('Syrienne', 'Syrien'),
+    ('Tchadienne', 'Tchadien'),
+    ('Tunisienne', 'Tunisien'),
+    ('Turque', 'Turc'),
+    ('Yéménite', 'Yéménite')
+]
+
 
 class Haaj(models.Model):
     user = models.OneToOneField(user,  on_delete=models.CASCADE)
@@ -20,7 +52,7 @@ class Haaj(models.Model):
     personal_picture = models.ImageField(upload_to='haaj_pictures/')
 
     def __str__(self):
-        return self.user.email
+        return self.email
 
     def save(self, *args, **kwargs):
         super(Haaj, self).save(*args, **kwargs)
@@ -43,7 +75,7 @@ class Haaja(models.Model):
     maahram_id = models.PositiveIntegerField()
     
     def __str__(self):
-        return self.user.email
+        return self.email
     
     def save(self, *args, **kwargs):
         super(Haaja, self).save(*args, **kwargs)
