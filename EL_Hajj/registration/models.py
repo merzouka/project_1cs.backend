@@ -1,7 +1,7 @@
 from django.db import models
 
 from django.db import models
-from authentication.models import utilisateur  
+from authentication.models import user 
 
 Nationalities = [
     ('Algérienne', 'Algérien'),
@@ -38,7 +38,7 @@ Nationalities = [
 
 
 class Haaj(models.Model):
-    user = models.OneToOneField(utilisateur,  on_delete=models.CASCADE)
+    user = models.OneToOneField(user,  on_delete=models.CASCADE)
     first_name_arabic = models.CharField(max_length=100)
     last_name_arabic = models.CharField(max_length=100)
     mother_name = models.CharField(max_length=100)
@@ -60,7 +60,7 @@ class Haaj(models.Model):
         self.user.save() 
         
 class Haaja(models.Model):
-    user = models.OneToOneField(utilisateur,  on_delete=models.CASCADE)
+    user = models.OneToOneField(user,  on_delete=models.CASCADE)
     first_name_arabic = models.CharField(max_length=100)
     last_name_arabic = models.CharField(max_length=100)
     mother_name = models.CharField(max_length=100)
