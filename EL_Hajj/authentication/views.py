@@ -62,35 +62,39 @@ def verify_email(request):
 @api_view(['GET', 'POST'])
 def register(request):
     data = request.data
-    email = data.get('email')
-    password = data.get('password')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    phone = data.get('phone')
-    dateOfBirth = data.get('dateOfBirth')
-    city = data.get('city')
-    province = data.get('province')
-    gender = data.get('gender')
+    # email = data.get('email')
+    # password = data.get('password')
+    # first_name = data.get('first_name')
+    # last_name = data.get('last_name')
+    # phone = data.get('phone')
+    # dateOfBirth = data.get('dateOfBirth')
+    # city = data.get('city')
+    # province = data.get('province')
+    # gender = data.get('gender')
     
-    hashed_password = make_password(password)
     
-    u = user.objects.create(
-        email = email,
-        password = hashed_password,
-        first_name = first_name,
-        last_name = last_name,
-        phone = phone,
-        dateOfBirth = dateOfBirth,
-        city = city,
-        province = province,
-        gender = gender,
-    )
+    # hashed_password = make_password(password)
     
+    # CHANGE: only use serializer.save
+    role = request.data.get("role","user")
+    request.data["role"] = role
+    request.data["password"] = make_password(request.data["password"])
     serializer = userSerializer(data=request.data)
-    
+    # u = user.objects.create(
+    #     email = email,
+    #     password = hashed_password,
+    #     first_name = first_name,
+    #     last_name = last_name,
+    #     phone = phone,
+    #     dateOfBirth = dateOfBirth,
+    #     city = city,
+    #     province = province,
+    #     gender = gender,
+    # )
     if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=404)
 
 
 
@@ -105,7 +109,7 @@ def send_reset_password_email(request):
 
     reset = PasswordReset()
     reset.save()
-    reset.user = user_
+    reset.usere = user_
     reset.save()
     try:
         hello = ""
@@ -130,11 +134,11 @@ def reset_password(request):
     email = request.data["email"]
     reset_id = int(request.data["id"])
     new_password = request.data["newPassword"]
+    reset: PasswordReset = PasswordReset.objects.get(pk=reset_id)
+    user_: user = user.objects.get(email=email)
     try:
-        reset: PasswordReset = PasswordReset.objects.get(pk=reset_id)
-        user_: user = user.objects.get(email=email)
-        if user_._get_pk_val() != reset.user_._get_pk_val():
-            return Response(JSONRenderer().render({ "message": "failed to reset password" }), 400)
+        if user_._get_pk_val() != reset.usere.id:
+            return Response(JSONRenderer().render({ "message": "invalid token" }), 400)
         if user_.check_password(new_password):
             return Response(JSONRenderer().render({ "message": "duplicate password" }), 409)
         user_.set_password(new_password)
@@ -155,12 +159,24 @@ def login_user(request):
         u= authenticate(request, username=email, password=password)
 
         if u is not None:
-            if u.is_email_verified:
-                login(request,u)
-                user_info = get_user_info(request,email)
-                return Response({'message': 'Login successful','user_info':user_info},status=200)
-            else:
-                return Response({'message':'email is not verified'},status=400)
+            # CHANGE: no verification of email on login
+            login(request,u)
+            resp = userSerializer(u).data
+            resp["id"] = u.id
+            
+            if u.role == "user":
+                resp["message"] = "Welcome, user"
+            elif u.role == "administrateur" :
+                resp["message"] = "Welcome, administrateur!"
+            else : 
+                resp["message"] = "Welcome, medecin!"
+            
+            
+                
+            return Response(JSONRenderer().render(resp),status=200)
+            # if u.is_email_verified:
+            # else:
+            #     return Response({'message':'email is not verified'},status=400)
             
         else:
             return Response({'error': 'Invalid email or password'}, status=401)
@@ -204,7 +220,9 @@ def get_user_info(request,email):
             'province' : user_.province,
             'gender' : user_.gender,
             'email' : user_.email,
-            'dateOfBirth' : user_.dateOfBirth
+            'dateOfBirth' : user_.dateOfBirth,
+            'role' : user_.role,
+            'is_email_verified' : user_.is_email_verified
                 }
                 user_info = convert_to_serializable(user_info)
                 
@@ -245,7 +263,7 @@ def default(request):
     except:
         return Response(JSONRenderer().render({ "message": "failed to send email" }), 400)
     
-    
+   
 
         
         

@@ -72,18 +72,13 @@ class userManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
-    
-class role(models.Model):
-    role = models.CharField(max_length=50)
-
-
+   
 
 class user(AbstractBaseUser):
-    id_role = models.ManyToManyField(role)
     username = None
-    email = models.EmailField(max_length=254,unique=True)
-    is_email_verified = models.BooleanField(null=True)
+    role = models.CharField(max_length=50,default="user")
+    email = models.EmailField(max_length=254,unique=True , null=False)
+    is_email_verified = models.BooleanField(default=False)
     code = models.CharField(max_length=4, null=True)
     
     
@@ -102,12 +97,13 @@ class user(AbstractBaseUser):
     
     
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS=['first_name', 'last_name', 'phone', 'dateOfBirth', 'province', 'city', 'gender']
+    REQUIRED_FIELDS=['role','password']
     objects = userManager()
 
     def __str__(self):
         return self.email   
     
+
     
 
 class PasswordReset(models.Model):
