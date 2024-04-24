@@ -12,4 +12,5 @@ urlpatterns = [
     path('auth/logout',views.logout_user,name='logout'),
     path("auth/profile/<str:email>",views.get_user_info),
     
+    
 ]

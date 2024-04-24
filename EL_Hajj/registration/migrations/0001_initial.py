@@ -14,28 +14,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Tirage',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type_tirage', models.IntegerField(default=1)),
-                ('nombre_de_place', models.IntegerField(default=0)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='WaitingList',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nin', models.CharField(max_length=150, unique=True)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Winners',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nin', models.CharField(max_length=150, unique=True)),
-            ],
-        ),
+        
+        
         migrations.CreateModel(
             name='Haaj',
             fields=[
@@ -73,14 +53,5 @@ class Migration(migrations.Migration):
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),
-        migrations.CreateModel(
-            name='Baladiya',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('wilaya', models.IntegerField(default=None, null=True)),
-                ('id_utilisateur', models.ManyToManyField(to=settings.AUTH_USER_MODEL)),
-                ('tirage', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='registration.tirage')),
-            ],
-        ),
+        
     ]

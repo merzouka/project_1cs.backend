@@ -85,6 +85,7 @@ class Haaja(models.Model):
 class Tirage(models.Model):
     type_tirage=models.IntegerField(default=1)
     nombre_de_place=models.IntegerField(default=0)
+    tranche_age=models.CharField(max_length=150, null=True)
 
 
         

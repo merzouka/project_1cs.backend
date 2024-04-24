@@ -39,7 +39,7 @@ class TirageConsumer(WebsocketConsumer):
                     selected_winners.append(selected_condidat.user)
                     condidats.remove(selected_condidat)
                     Winners.objects.create(nin=selected_condidat.user.id)
-                    self.send(text_data=json.dumps({'winner': selected_condidat.user.id}))
+                    
                 elif selected_condidat.user.gender == 'F':
                     selected_winners.append(selected_condidat.user)
                     condidats.remove(selected_condidat)
@@ -47,8 +47,7 @@ class TirageConsumer(WebsocketConsumer):
                     maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
                     selected_winners.append(maahram_instance)
                     Winners.objects.create(nin=maahram_instance.id)
-                    self.send(text_data=json.dumps({'winners': [selected_condidat.user.id, maahram_instance.id]}))
-
+                    
         return selected_winners
 
     def receive(self, text_data):

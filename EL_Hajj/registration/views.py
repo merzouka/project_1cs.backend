@@ -5,25 +5,20 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import HaajSerializer , HaajaSerializer
 from authentication.models import user 
-from rest_framework.decorators import api_view, permission_classes 
 from rest_framework.permissions import IsAuthenticated
-from .models import  Baladiya, Tirage
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import HaajSerializer , HaajaSerializer
-
+from .models import  Baladiya, Tirage,Haaj, Haaja, Winners
 from rest_framework.decorators import api_view, permission_classes 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
-from rest_framework.response import Response
-from .models import  Baladiya, Tirage
-from authentication.models import user
 from django.shortcuts import render
+import random 
+
+
+
+
+
+
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -83,7 +78,7 @@ def associate_tirage_with_baladiyas(request):
     utilisateur_id = request.data.get('utilisateur_id')
     type_tirage = request.data.get('type_tirage')
     nombre_de_place = request.data.get('nombre_de_place')
-
+    tranche_age = request.data.get('tranche_age')
     
     utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
 
@@ -93,7 +88,8 @@ def associate_tirage_with_baladiyas(request):
     
     tirage = Tirage.objects.create(
         type_tirage=type_tirage,
-        nombre_de_place=nombre_de_place
+        nombre_de_place=nombre_de_place,
+        tranche_age=tranche_age 
     )
 
     
@@ -106,5 +102,46 @@ def associate_tirage_with_baladiyas(request):
     return Response({'message': 'Tirage information associated with Baladiyas successfully'}, status=201)
 
 
-def index(request):
-    return render(request, 'test2.html')
+
+@api_view(['GET'])
+def fetch_winners(request, id_utilisateur):
+    try:
+        user_instance = get_object_or_404(user, id=id_utilisateur)
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        first_baladiya = Baladiya.objects.filter(id_utilisateur=id_utilisateur).first()
+
+        condidats = []
+
+        for baladiya_name in baladiya_names:
+            haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
+            haajas_in_city = Haaja.objects.filter(user__city=baladiya_name)
+            condidats.extend(haajs_in_city)
+            condidats.extend(haajas_in_city)
+
+        id_tirage = first_baladiya.tirage.id
+        number_of_winners_needed = Tirage.objects.get(id=id_tirage).nombre_de_place
+        type_de_tirage = Tirage.objects.get(id=id_tirage).type_tirage
+
+        selected_winners = []
+
+        if type_de_tirage == 1:
+            while len(selected_winners) < number_of_winners_needed:
+                selected_condidat = random.choice(condidats)
+                if selected_condidat.user.gender == 'M':
+                    selected_winners.append(selected_condidat.user.id)
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    
+                elif selected_condidat.user.gender == 'F':
+                    selected_winners.append(selected_condidat.user.id)
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                    selected_winners.append(maahram_instance.id)
+                    Winners.objects.create(nin=maahram_instance.id)
+                    
+        return Response({'winners': selected_winners}, status=200)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
