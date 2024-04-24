@@ -94,7 +94,8 @@ class user(AbstractBaseUser):
     ]
     gender = models.CharField(max_length=1, choices=STATUS_CHOICES, default='M',blank=False)
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
-    
+    winner=models.BooleanField(default=False)
+    winning_date = models.DateField(null=True , default=None)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS=['role','password']
