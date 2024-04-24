@@ -2,6 +2,7 @@ from django.db import models
 
 from django.db import models
 from authentication.models import user 
+from django.core.exceptions import ValidationError
 
 Nationalities = [
     ('Algérienne', 'Algérien'),
@@ -50,34 +51,19 @@ class Haaj(models.Model):
     nationality = models.CharField(max_length=100, choices=Nationalities)
     phone_number = models.CharField(max_length=20)
     personal_picture = models.ImageField(upload_to='haaj_pictures/')
+    maahram_id = models.PositiveIntegerField(null=True , default=None)
 
     def __str__(self):
         return self.email
 
-    def save(self, *args, **kwargs):
-        super(Haaj, self).save(*args, **kwargs)
-        self.user.nombreInscription += 1
-        self.user.save() 
+def save(self, *args, **kwargs):
+        if self.user.gender == 'F':      
+            if self.maahram_id is None:
+                raise ValidationError("Maahram ID is required for female users.")
         
-class Haaja(models.Model):
-    user = models.OneToOneField(user,  on_delete=models.CASCADE)
-    first_name_arabic = models.CharField(max_length=100)
-    last_name_arabic = models.CharField(max_length=100)
-    mother_name = models.CharField(max_length=100)
-    father_name = models.CharField(max_length=100)
-    NIN = models.CharField(max_length=150, unique=True)
-    card_expiration_date = models.DateField()
-    passport_id = models.CharField(max_length=100)
-    passport_expiration_date = models.DateField()
-    nationality = models.CharField(max_length=100, choices=Nationalities)
-    phone_number = models.CharField(max_length=20)
-    personal_picture = models.ImageField(upload_to='haaj_pictures/')
-    maahram_id = models.PositiveIntegerField()
-    
-    def __str__(self):
-        return self.email
-    
-    def save(self, *args, **kwargs):
-        super(Haaja, self).save(*args, **kwargs)
+        super(Haaj, self).save(*args, **kwargs)
+        
+      
         self.user.nombreInscription += 1
-        self.user.save()  
+        self.user.save()
+        
