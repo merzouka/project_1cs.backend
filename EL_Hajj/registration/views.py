@@ -4,6 +4,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from authentication.serializers import userSerializer
 from .serializers import HaajSerializer 
 from authentication.models import user 
 from rest_framework.permissions import IsAuthenticated
@@ -246,7 +248,7 @@ def fetch_winners(request, id_utilisateur):
                           })
                           Winners.objects.create(nin=maahram_instance.id)
 
-        # Concatenate the two lists into one
+        
         if type_de_tirage == 1:
             selected_winners = selected_winners
         else:
@@ -256,3 +258,38 @@ def fetch_winners(request, id_utilisateur):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def participants_tirage(request, utilisateur_id):
+    try:
+        
+        user_instance = get_object_or_404(user, id=utilisateur_id)
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        serialized_data = []
+
+        
+        for baladiya_name in baladiya_names:
+            haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
+            for haaj in haajs_in_city:
+                haaj_data = {
+                    'id': haaj.id,
+                    'first_name_arabic': haaj.first_name_arabic,
+                    'last_name_arabic': haaj.last_name_arabic,
+                    'mother_name': haaj.mother_name,
+                    'father_name': haaj.father_name,
+                    'NIN': haaj.NIN,
+                    'card_expiration_date': haaj.card_expiration_date,
+                    'passport_id': haaj.passport_id,
+                    'passport_expiration_date': haaj.passport_expiration_date,
+                    'nationality': haaj.nationality,
+                    'phone_number': haaj.phone_number,
+                    'personal_picture': haaj.personal_picture.url if haaj.personal_picture else None,
+                    'user': userSerializer(haaj.user).data  # Serialize user associated with Haaj
+                }
+                serialized_data.append(haaj_data)
+        
+        return Response(serialized_data, status=200)
+    
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
