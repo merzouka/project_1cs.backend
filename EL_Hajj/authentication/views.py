@@ -61,7 +61,7 @@ def verify_email(request):
 @csrf_exempt    
 @api_view(['GET', 'POST'])
 def register(request):
-    # data = request.data
+    data = request.data
     # email = data.get('email')
     # password = data.get('password')
     # first_name = data.get('first_name')
@@ -72,9 +72,12 @@ def register(request):
     # province = data.get('province')
     # gender = data.get('gender')
     
+    
     # hashed_password = make_password(password)
     
     # CHANGE: only use serializer.save
+    role = request.data.get("role","user")
+    request.data["role"] = role
     request.data["password"] = make_password(request.data["password"])
     serializer = userSerializer(data=request.data)
     # u = user.objects.create(
@@ -160,6 +163,16 @@ def login_user(request):
             login(request,u)
             resp = userSerializer(u).data
             resp["id"] = u.id
+            
+            if u.role == "user":
+                resp["message"] = "Welcome, user"
+            elif u.role == "administrateur" :
+                resp["message"] = "Welcome, administrateur!"
+            else : 
+                resp["message"] = "Welcome, medecin!"
+            
+            
+                
             return Response(JSONRenderer().render(resp),status=200)
             # if u.is_email_verified:
             # else:
@@ -207,7 +220,9 @@ def get_user_info(request,email):
             'province' : user_.province,
             'gender' : user_.gender,
             'email' : user_.email,
-            'dateOfBirth' : user_.dateOfBirth
+            'dateOfBirth' : user_.dateOfBirth,
+            'role' : user_.role,
+            'is_email_verified' : user_.is_email_verified
                 }
                 user_info = convert_to_serializable(user_info)
                 
@@ -248,7 +263,7 @@ def default(request):
     except:
         return Response(JSONRenderer().render({ "message": "failed to send email" }), 400)
     
-    
+   
 
         
         

@@ -72,18 +72,13 @@ class userManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
-    
-class role(models.Model):
-    role = models.CharField(max_length=50)
-
-
+   
 
 class user(AbstractBaseUser):
-    id_role = models.ManyToManyField(role)
     username = None
+    role = models.CharField(max_length=50,default="user")
     email = models.EmailField(max_length=254,unique=True , null=False)
-    is_email_verified = models.BooleanField(null=True)
+    is_email_verified = models.BooleanField(default=False)
     code = models.CharField(max_length=4, null=True)
     
     
@@ -99,16 +94,16 @@ class user(AbstractBaseUser):
     ]
     gender = models.CharField(max_length=1, choices=STATUS_CHOICES, default='M',blank=False)
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
-    
+    winner=models.BooleanField(default=False)
+    winning_date = models.DateField(null=True , default=None)
     
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS=['first_name', 'last_name', 'phone', 'dateOfBirth', 'province', 'city', 'gender']
+    REQUIRED_FIELDS=['role','password']
     objects = userManager()
 
     def __str__(self):
         return self.email   
     
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone', 'dateOfBirth', 'province', 'city', 'gender']
 
     
 

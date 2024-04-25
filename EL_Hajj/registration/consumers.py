@@ -1,7 +1,7 @@
 import json
 import random
 from channels.generic.websocket import WebsocketConsumer
-from .models import Haaj, Haaja, Winners, Baladiya, Tirage
+from .models import Haaj, Winners, Baladiya, Tirage
 from authentication.models import user
 
 
