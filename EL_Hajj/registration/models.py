@@ -65,5 +65,31 @@ def save(self, *args, **kwargs):
         
       
         self.user.nombreInscription += 1
-        self.user.save()
+        self.user.save()  
+
+class Tirage(models.Model):
+    type_tirage=models.IntegerField(default=1)
+    nombre_de_place=models.IntegerField(default=0)
+    tranche_age=models.IntegerField(default=60, null=True)
+
+
         
+class Baladiya(models.Model):
+    name = models.CharField(max_length=100)
+    id_utilisateur = models.ManyToManyField(user)
+    wilaya=models.IntegerField(null=True,default=None)
+    tirage= models.ForeignKey(Tirage,on_delete=models.CASCADE,default=None, null=True,) 
+    def __str__(self):
+        return self.name
+      
+class Winners(models.Model):
+    nin = models.CharField(max_length=150, unique=True)
+
+    def __str__(self):
+        return self.nin
+
+class WaitingList(models.Model):
+    nin = models.CharField(max_length=150, unique=True)
+
+    def __str__(self):
+        return self.nin

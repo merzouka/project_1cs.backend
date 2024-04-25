@@ -96,7 +96,7 @@ class user(AbstractBaseUser):
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
     winner=models.BooleanField(default=False)
     winning_date = models.DateField(null=True , default=None)
-    
+    personal_picture = models.ImageField(upload_to='user_pictures/' , null=True , default=None)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS=['role','password']
     objects = userManager()

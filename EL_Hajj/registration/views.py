@@ -6,8 +6,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import HaajSerializer 
 from authentication.models import user 
-from rest_framework.decorators import api_view, permission_classes 
 from rest_framework.permissions import IsAuthenticated
+from .models import  Baladiya, Tirage, Haaj, Winners
+from rest_framework.decorators import api_view, permission_classes 
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
+from django.shortcuts import render
+import random 
+from django.utils import timezone
+import datetime
+
+
+
+
+
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -37,3 +50,209 @@ def registration(request):
             haaj_instance = haaj_serializer.save()
             return Response("Success", status=status.HTTP_201_CREATED)
         return Response(haaj_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    
+
+
+
+
+
+
+
+
+
+@api_view(['GET'])
+@parser_classes([JSONParser])
+def baladiya_names_by_utilisateur(request, utilisateur_id):
+    try:
+        utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+        baladiya_names = utilisateur_obj.baladiya_set.values_list('name', flat=True)
+        return Response({'baladiya_names': list(baladiya_names)}, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+
+
+
+@api_view(['POST'])
+@parser_classes([JSONParser])
+def associate_tirage_with_baladiyas(request):
+    
+    utilisateur_id = request.data.get('utilisateur_id')
+    type_tirage = request.data.get('type_tirage')
+    nombre_de_place = request.data.get('nombre_de_place')
+    tranche_age = request.data.get('tranche_age')
+    
+    utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+
+    
+    baladiya_ids = utilisateur_obj.baladiya_set.values_list('id', flat=True)
+
+    
+    tirage = Tirage.objects.create(
+        type_tirage=type_tirage,
+        nombre_de_place=nombre_de_place,
+        tranche_age=tranche_age 
+    )
+
+    
+    for baladiya_id in baladiya_ids:
+        baladiya = get_object_or_404(Baladiya, id=baladiya_id)
+        baladiya.tirage = tirage
+        baladiya.save()
+
+ 
+    return Response({'message': 'Tirage information associated with Baladiyas successfully'}, status=201)
+
+
+
+
+
+@api_view(['GET'])
+def fetch_winners(request, id_utilisateur):
+    try:
+        user_instance = get_object_or_404(user, id=id_utilisateur)
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        first_baladiya = Baladiya.objects.filter(id_utilisateur=id_utilisateur).first()
+
+        condidats = []
+
+        for baladiya_name in baladiya_names:
+            haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
+            condidats.extend(haajs_in_city)
+
+        id_tirage = first_baladiya.tirage.id
+        number_of_winners_needed = Tirage.objects.get(id=id_tirage).nombre_de_place
+        type_de_tirage = Tirage.objects.get(id=id_tirage).type_tirage
+
+        selected_winners = []
+
+        if type_de_tirage == 1:
+            while len(selected_winners) < number_of_winners_needed:
+                selected_condidat = random.choice(condidats)
+                if selected_condidat.user.gender == 'M':
+                    selected_condidat.user.winner = True 
+                    selected_condidat.user.winning_date= timezone.now()  
+                    selected_winners.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                elif selected_condidat.user.gender == 'F':
+                    selected_condidat.user.winner = True 
+                    selected_condidat.user.winning_date= timezone.now()  
+                    selected_winners.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                    maahram_instance.winner = True 
+                    maahram_instance.winning_date= timezone.now()
+                    selected_winners.append({
+                        'first_name': maahram_instance.first_name,
+                        'last_name': maahram_instance.last_name,
+                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                    })
+                    Winners.objects.create(nin=maahram_instance.id)
+        elif type_de_tirage == 2:
+            selected_winners1 = []
+            selected_winners2 = []
+            tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
+            nombre_old = (tranche_age * number_of_winners_needed) / 100
+            new = 100 - tranche_age
+            nombre_new = (new * number_of_winners_needed) / 100
+
+            while len(selected_winners1) < nombre_old:
+                selected_condidat = random.choice(condidats)
+                if selected_condidat.user.gender == 'M':
+                    selected_condidat.user.winner = True 
+                    selected_condidat.user.winning_date= timezone.now()  
+                    selected_condidat.user.save() 
+                    selected_winners1.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    
+                elif selected_condidat.user.gender == 'F':
+                    selected_condidat.user.winner = True
+                    selected_condidat.user.winning_date= timezone.now() 
+                    selected_condidat.user.save()  
+                    selected_winners1.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    
+                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                    #condidats.remove(maahram_instance)
+                    maahram_instance.winner = True 
+                    maahram_instance.winning_date= timezone.now()
+                    maahram_instance.save()
+                    selected_winners1.append({
+                        'first_name': maahram_instance.first_name,
+                        'last_name': maahram_instance.last_name,
+                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                    })
+                    Winners.objects.create(nin=maahram_instance.id)
+
+            while len(selected_winners2) < nombre_new:
+                selected_condidat = random.choice(condidats)
+                if selected_condidat.user.gender == 'M':
+                    selected_condidat.user.winner = True
+                    selected_condidat.user.winning_date= timezone.now() 
+                    selected_condidat.user.save()  
+                    selected_winners2.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+                    
+                elif selected_condidat.user.gender == 'F':
+                    selected_condidat.user.winner = True  
+                    selected_condidat.user.winning_date= timezone.now() 
+                    selected_condidat.user.save()  
+                    selected_winners2.append({
+                        'first_name': selected_condidat.user.first_name,
+                        'last_name': selected_condidat.user.last_name,
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                    })
+                    condidats.remove(selected_condidat)
+                    Winners.objects.create(nin=selected_condidat.user.id)
+
+                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                    if maahram_instance not in selected_winners1:
+                    #condidats.remove(maahram_instance)
+                          maahram_instance.winner = True
+                          maahram_instance.winner = True  
+                          maahram_instance.save()  
+                          selected_winners2.append({
+                               'first_name': maahram_instance.first_name,
+                               'last_name': maahram_instance.last_name,
+                               'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                          })
+                          Winners.objects.create(nin=maahram_instance.id)
+
+        # Concatenate the two lists into one
+        if type_de_tirage == 1:
+            selected_winners = selected_winners
+        else:
+            selected_winners = selected_winners1 + selected_winners2
+
+        return JsonResponse({'winners': selected_winners}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -3,5 +3,4 @@ venv/
 EL_Hajj/haaj_pictures
 
 # Ignore cache files
-*.pyc
-__pycache__/
+**/__pycache__/

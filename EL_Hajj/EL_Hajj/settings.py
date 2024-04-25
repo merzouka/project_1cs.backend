@@ -35,6 +35,7 @@ SITE_ID = 1
 
 
 INSTALLED_APPS = [
+    'daphne',
     'registration',
     'corsheaders',
     'rest_framework',
@@ -86,7 +87,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'EL_Hajj.wsgi.application'
-
+ASGI_APPLICATION = 'EL_Hajj.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
