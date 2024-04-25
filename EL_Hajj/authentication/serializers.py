@@ -3,6 +3,6 @@ from .models import user
 
 
 class userSerializer(serializers.ModelSerializer):
-    class Meta :
+    class Meta:
         model = user
-        fields = ['email','password','dateOfBirth','gender','phone','first_name','last_name','city','province','role','is_email_verified']
+        fields = [ 'email', 'password', 'last_login', 'is_email_verified', 'code', 'first_name', 'last_name', 'phone', 'dateOfBirth', 'city', 'province', 'gender', 'nombreInscription', 'role', 'winner', 'winning_date', 'personal_picture']
