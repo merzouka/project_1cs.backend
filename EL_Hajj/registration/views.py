@@ -124,6 +124,34 @@ def fetch_winners(request, id_utilisateur):
         for baladiya_name in baladiya_names:
             haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
             condidats.extend(haajs_in_city)
+        
+        condidats2 =[]
+    
+
+
+        for haaj in condidats:
+    
+             times_to_add = haaj.user.nombreInscription
+    
+             condidats2.extend([haaj] * times_to_add)
+
+        condidats2_over_60 = []
+        condidats2_under_60 = []
+
+  
+        for haaj in condidats2:
+    
+           
+           user_age_days = (datetime.date.today() - haaj.user.dateOfBirth).days
+           user_age_years = user_age_days / 365.2425 
+    
+    
+           if user_age_years > 60:
+        
+              condidats2_over_60.append(haaj)
+           else:
+        
+              condidats2_under_60.append(haaj)
 
         id_tirage = first_baladiya.tirage.id
         number_of_winners_needed = Tirage.objects.get(id=id_tirage).nombre_de_place
@@ -133,7 +161,7 @@ def fetch_winners(request, id_utilisateur):
 
         if type_de_tirage == 1:
             while len(selected_winners) < number_of_winners_needed:
-                selected_condidat = random.choice(condidats)
+                selected_condidat = random.choice(condidats2)
                 if selected_condidat.user.gender == 'M':
                     selected_condidat.user.winner = True 
                     selected_condidat.user.winning_date= timezone.now()  
@@ -142,7 +170,8 @@ def fetch_winners(request, id_utilisateur):
                         'last_name': selected_condidat.user.last_name,
                         'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
                     })
-                    condidats.remove(selected_condidat)
+                    #condidats2.remove(selected_condidat)
+                    condidats2 = list(filter((selected_condidat).__ne__, condidats2))
                     Winners.objects.create(nin=selected_condidat.user.id)
                 elif selected_condidat.user.gender == 'F':
                     selected_condidat.user.winner = True 
@@ -152,7 +181,8 @@ def fetch_winners(request, id_utilisateur):
                         'last_name': selected_condidat.user.last_name,
                         'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
                     })
-                    condidats.remove(selected_condidat)
+                    #condidats2.remove(selected_condidat)
+                    condidats2 = list(filter((selected_condidat).__ne__, condidats2))
                     Winners.objects.create(nin=selected_condidat.user.id)
                     maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
                     maahram_instance.winner = True 
@@ -163,90 +193,104 @@ def fetch_winners(request, id_utilisateur):
                         'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
                     })
                     Winners.objects.create(nin=maahram_instance.id)
+                    if maahram_instance in condidats2:
+                              condidats2 = list(filter((maahram_instance).__ne__, condidats2))
+
         elif type_de_tirage == 2:
             selected_winners1 = []
             selected_winners2 = []
             tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
-            nombre_old = (tranche_age * number_of_winners_needed) / 100
-            new = 100 - tranche_age
-            nombre_new = (new * number_of_winners_needed) / 100
+            nombre_old = int((tranche_age * number_of_winners_needed) / 100)
+            
+            nombre_new = number_of_winners_needed-nombre_old
+            if condidats2_over_60:
+                while len(selected_winners1) < nombre_old:
+                    selected_condidat = random.choice(condidats2_over_60)
+                    if selected_condidat.user.gender == 'M':
+                        selected_condidat.user.winner = True 
+                        selected_condidat.user.winning_date= timezone.now()  
+                        selected_condidat.user.save() 
+                        selected_winners1.append({
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        })
+                        # condidats2_over_60.remove(selected_condidat)
+                        condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                        Winners.objects.create(nin=selected_condidat.user.id)
+                        
+                    elif selected_condidat.user.gender == 'F':
+                        selected_condidat.user.winner = True
+                        selected_condidat.user.winning_date= timezone.now() 
+                        selected_condidat.user.save()  
+                        selected_winners1.append({
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        })
+                        #condidats2_over_60.remove(selected_condidat)
+                        condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                        Winners.objects.create(nin=selected_condidat.user.id)
+                        
+                        maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                        #condidats.remove(maahram_instance)
+                        maahram_instance.winner = True 
+                        maahram_instance.winning_date= timezone.now()
+                        maahram_instance.save()
+                        selected_winners1.append({
+                            'first_name': maahram_instance.first_name,
+                            'last_name': maahram_instance.last_name,
+                            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                        })
+                        Winners.objects.create(nin=maahram_instance.id)
+                        if condidats2_over_60:
+                            if maahram_instance in condidats2_under_60:
+                              condidats2_over_60 = list(filter((maahram_instance).__ne__, condidats2_over_60))
 
-            while len(selected_winners1) < nombre_old:
-                selected_condidat = random.choice(condidats)
-                if selected_condidat.user.gender == 'M':
-                    selected_condidat.user.winner = True 
-                    selected_condidat.user.winning_date= timezone.now()  
-                    selected_condidat.user.save() 
-                    selected_winners1.append({
-                        'first_name': selected_condidat.user.first_name,
-                        'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
-                    })
-                    condidats.remove(selected_condidat)
-                    Winners.objects.create(nin=selected_condidat.user.id)
-                    
-                elif selected_condidat.user.gender == 'F':
-                    selected_condidat.user.winner = True
-                    selected_condidat.user.winning_date= timezone.now() 
-                    selected_condidat.user.save()  
-                    selected_winners1.append({
-                        'first_name': selected_condidat.user.first_name,
-                        'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
-                    })
-                    condidats.remove(selected_condidat)
-                    Winners.objects.create(nin=selected_condidat.user.id)
-                    
-                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                    #condidats.remove(maahram_instance)
-                    maahram_instance.winner = True 
-                    maahram_instance.winning_date= timezone.now()
-                    maahram_instance.save()
-                    selected_winners1.append({
-                        'first_name': maahram_instance.first_name,
-                        'last_name': maahram_instance.last_name,
-                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
-                    })
-                    Winners.objects.create(nin=maahram_instance.id)
+            if condidats2_under_60:                           
+                while len(selected_winners2) < nombre_new:
+                    selected_condidat = random.choice(condidats2_under_60)
+                    if selected_condidat.user.gender == 'M':
+                        selected_condidat.user.winner = True
+                        selected_condidat.user.winning_date= timezone.now() 
+                        selected_condidat.user.save()  
+                        selected_winners2.append({
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        })
+                        #condidats2_under_60.remove(selected_condidat)
+                        condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                        Winners.objects.create(nin=selected_condidat.user.id)
+                        
+                    elif selected_condidat.user.gender == 'F':
+                        selected_condidat.user.winner = True  
+                        selected_condidat.user.winning_date= timezone.now() 
+                        selected_condidat.user.save()  
+                        selected_winners2.append({
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        })
+                        #condidats2_under_60.remove(selected_condidat)
+                        condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                        Winners.objects.create(nin=selected_condidat.user.id)
 
-            while len(selected_winners2) < nombre_new:
-                selected_condidat = random.choice(condidats)
-                if selected_condidat.user.gender == 'M':
-                    selected_condidat.user.winner = True
-                    selected_condidat.user.winning_date= timezone.now() 
-                    selected_condidat.user.save()  
-                    selected_winners2.append({
-                        'first_name': selected_condidat.user.first_name,
-                        'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
-                    })
-                    condidats.remove(selected_condidat)
-                    Winners.objects.create(nin=selected_condidat.user.id)
-                    
-                elif selected_condidat.user.gender == 'F':
-                    selected_condidat.user.winner = True  
-                    selected_condidat.user.winning_date= timezone.now() 
-                    selected_condidat.user.save()  
-                    selected_winners2.append({
-                        'first_name': selected_condidat.user.first_name,
-                        'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
-                    })
-                    condidats.remove(selected_condidat)
-                    Winners.objects.create(nin=selected_condidat.user.id)
-
-                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                    if maahram_instance not in selected_winners1:
-                    #condidats.remove(maahram_instance)
-                          maahram_instance.winner = True
-                          maahram_instance.winner = True  
-                          maahram_instance.save()  
-                          selected_winners2.append({
-                               'first_name': maahram_instance.first_name,
-                               'last_name': maahram_instance.last_name,
-                               'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
-                          })
-                          Winners.objects.create(nin=maahram_instance.id)
+                        maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                        if maahram_instance not in selected_winners1:
+                        #condidats.remove(maahram_instance)
+                                maahram_instance.winner = True
+                                maahram_instance.winning_date= timezone.now()  
+                                maahram_instance.save()  
+                                selected_winners2.append({
+                                    'first_name': maahram_instance.first_name,
+                                    'last_name': maahram_instance.last_name,
+                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                })
+                                Winners.objects.create(nin=maahram_instance.id)
+                                if condidats2_under_60:
+                                    if maahram_instance in condidats2_under_60:
+                                        condidats2_under_60 = list(filter((maahram_instance).__ne__, condidats2_under_60))
 
         
         if type_de_tirage == 1:
@@ -264,8 +308,11 @@ def participants_tirage(request, utilisateur_id):
     try:
         
         user_instance = get_object_or_404(user, id=utilisateur_id)
-        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
-        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        user_city = user_instance.city
+        baladiya_instance = get_object_or_404(Baladiya, name=user_city)
+        baladiya_tirage_id = baladiya_instance.tirage_id
+        baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
+        baladiya_names = [baladiya.name for baladiya in baladiyat_in_tirage]
         serialized_data = []
 
         
@@ -291,5 +338,25 @@ def participants_tirage(request, utilisateur_id):
         
         return Response(serialized_data, status=200)
     
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+    
+@api_view(['GET'])
+def check_tirage_definition(request, utilisateur_id):
+    try:
+        user_instance = get_object_or_404(user, id=utilisateur_id)
+        baladiya_ids = user_instance.baladiya_set.values_list('id', flat=True)
+
+        if len(baladiya_ids) == 0:
+            return Response({'tirage_definit': False}, status=200)
+
+        for baladiya_id in baladiya_ids:
+            baladiya = get_object_or_404(Baladiya, id=baladiya_id)
+            if not baladiya.tirage_id:
+                return Response({'tirage_definit': False}, status=200)
+
+        
+        return Response({'tirage_definit': True}, status=200)
+
     except Exception as e:
         return Response({'error': str(e)}, status=500)
