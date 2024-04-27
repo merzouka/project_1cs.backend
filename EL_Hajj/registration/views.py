@@ -25,7 +25,6 @@ import datetime
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
 def registration(request):
     authenticated_user = request.user  
     if request.method == 'GET':
@@ -38,7 +37,7 @@ def registration(request):
             'gender' : authenticated_user.gender
         }
         return JsonResponse(utilisateur_data)
-    
+
     elif request.method == 'POST':
         if authenticated_user.winner:
             last_winning_date = authenticated_user.winning_date
