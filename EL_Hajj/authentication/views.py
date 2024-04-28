@@ -246,7 +246,6 @@ def get_user_info(request,email):
     
 @api_view(["POST"])
 def logout_user(request):
-    print(request.user)
     logout(request)
     return JsonResponse({"message": "Logout successful"})
 

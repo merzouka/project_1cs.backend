@@ -25,6 +25,7 @@ import datetime
 
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def registration(request):
     authenticated_user = request.user  
     if request.method == 'GET':
