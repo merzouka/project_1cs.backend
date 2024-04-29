@@ -38,7 +38,7 @@ def registration(request):
             'gender' : authenticated_user.gender
         }
         return JsonResponse(utilisateur_data)
-    
+
     elif request.method == 'POST':
         if authenticated_user.winner:
             last_winning_date = authenticated_user.winning_date
@@ -386,6 +386,7 @@ def participants_tirage(request, utilisateur_id):
     
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
     
 @api_view(['GET'])
 def check_tirage_definition(request, utilisateur_id):
@@ -406,3 +407,4 @@ def check_tirage_definition(request, utilisateur_id):
 
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
