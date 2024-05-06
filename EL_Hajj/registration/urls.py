@@ -11,6 +11,7 @@ urlpatterns = [
     path('tirage_fini/<int:utilisateur_id>/', tirage_fini, name='tirage_fini'),
     path('winners_by_baladiya/<int:utilisateur_id>/', winners_by_baladiya, name='winners_by_baladiya'),
     path('visite_status/', visite_status, name='visite_status'),
-    
+    path('winners_accepted/<int:utilisateur_id>',views.winners_accepted, name='winners_accepted'),
+    path('payment_status',views.payment_status, name='payment_status'),
 
 ]

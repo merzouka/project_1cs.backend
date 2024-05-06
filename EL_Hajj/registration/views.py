@@ -673,3 +673,68 @@ def visite_status(request):
         return JsonResponse({'error': str(e)}, status=500)
    
     
+#for payment.....................
+@api_view(['GET'])
+def winners_accepted(request, utilisateur_id):
+    try:
+        
+        user_instance = get_object_or_404(user, id=utilisateur_id)
+        
+        
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        
+        
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        
+        
+        winners = Winners.objects.filter(
+            nin__in=user.objects.filter(city__in=baladiya_names).values('id'),
+            visite=True
+        )
+        
+        
+        winners_data = []
+        for winner in winners:
+            winner_user = get_object_or_404(user, id=winner.nin)
+            user_data = {
+                'id_user': winner_user.id,
+                'id_winner': winner.id,
+                'first_name': winner_user.first_name,
+                'last_name': winner_user.last_name,
+                'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+            }
+            winners_data.append(user_data)
+        
+        return JsonResponse(winners_data, status=200, safe=False)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+def payment_status(request):
+    try:
+        
+        id_winner = request.data.get('id_winner')
+        status = request.data.get('status')
+        
+        
+        if not id_winner or not status:
+            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+        
+        
+        winner = get_object_or_404(Winners, id=id_winner)
+        
+        
+        if status.lower() == "payé":
+            
+            winner.payement = True
+            winner.save()
+            return JsonResponse({'message': 'Winner payment status updated successfully'}, status=200)
+        else:
+            
+            return JsonResponse({'message': 'Status is not "payé", no action taken'}, status=200)
+    
+    except Exception as e:
+       
+        return JsonResponse({'error': str(e)}, status=500)
