@@ -18,6 +18,7 @@ from django.shortcuts import render
 import random 
 from django.utils import timezone
 import datetime
+from registration.serializers import WinnersSerializer
 
 
 
@@ -575,10 +576,10 @@ def participants_tirage(request, utilisateur_id):
                 }
                 serialized_data.append(haaj_data)
         
-        return Response(serialized_data, status=200)
+        return JsonResponse(serialized_data, status=200)
     
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
     
 @api_view(['GET'])
 def check_tirage_definition(request, utilisateur_id):
@@ -587,18 +588,18 @@ def check_tirage_definition(request, utilisateur_id):
         baladiya_ids = user_instance.baladiya_set.values_list('id', flat=True)
 
         if len(baladiya_ids) == 0:
-            return Response({'tirage_definit': False}, status=200)
+            return JsonResponse({'tirage_definit': False}, status=200)
 
         for baladiya_id in baladiya_ids:
             baladiya = get_object_or_404(Baladiya, id=baladiya_id)
             if not baladiya.tirage_id:
-                return Response({'tirage_definit': False}, status=200)
+                return JsonResponse({'tirage_definit': False}, status=200)
 
         
-        return Response({'tirage_definit': True}, status=200)
+        return JsonResponse({'tirage_definit': True}, status=200)
 
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
@@ -606,10 +607,69 @@ def tirage_fini(request, utilisateur_id):
     try:
         baladiyat = Baladiya.objects.filter(id_utilisateur=utilisateur_id).first()
         if baladiyat and baladiyat.tirage and baladiyat.tirage.tirage_défini:
-            return Response({'message': 'tirage défini'})
+            return JsonResponse({'message': 'tirage défini'})
         else:
-            return Response({'message': 'tirage non défini'})
+            return JsonResponse({'message': 'tirage non défini'})
 
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
    
+
+#for visite medical...........................................
+@api_view(['GET'])
+def winners_by_baladiya(request, utilisateur_id):
+    try:
+        user_instance = get_object_or_404(user, id=utilisateur_id)
+        
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        
+        user_ids_in_city = user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)
+        winners = Winners.objects.filter(nin__in=user_ids_in_city)
+        
+        winners_data = []
+        for winner in winners:
+            winner_user = get_object_or_404(user, id=winner.nin)
+            user_data = {
+                'id_user': winner_user.id,
+                'id_winner': winner.id,
+                'first_name': winner_user.first_name,
+                'last_name': winner_user.last_name,
+                'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+            }
+            winners_data.append(user_data)
+        
+        return JsonResponse(winners_data, status=200, safe=False)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@api_view(['POST'])
+def visite_status(request):
+
+    try:
+
+        id_winner = request.data.get('id_winner')
+        status = request.data.get('status')
+            
+        if not id_winner or not status:
+            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+            
+        try:
+            winner = Winners.objects.get(id=id_winner)
+        except Winners.DoesNotExist:
+            return JsonResponse({'error': 'Winner with the provided ID does not exist'}, status=404)
+            
+        if status.lower() == "accepted":
+            winner.visite = True
+            winner.save()
+            return JsonResponse({'message': 'Winner visit status updated successfully'}, status=200)
+        else:
+            return JsonResponse({'message': 'Status is not "accepted", no action taken'}, status=200)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+   
+    

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Haaj, Tirage, Baladiya
+from .models import Haaj, Tirage, Baladiya, Winners
 from django.utils import timezone
 from authentication.models import user
 
@@ -47,5 +47,9 @@ class TirageSerializer(serializers.ModelSerializer):
         fields = '__all__'
  
         
-        
+class WinnersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Winners
+        fields = '__all__'
+       
         

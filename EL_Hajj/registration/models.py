@@ -84,10 +84,13 @@ class Baladiya(models.Model):
         return self.name
       
 class Winners(models.Model):
-    nin = models.CharField(max_length=150, unique=True)
+    nin = models.IntegerField(unique=True)
+    visite = models.BooleanField(default=False)
+    payement = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.nin
+        return str(self.nin)
+
 
 class WaitingList(models.Model):
     nin = models.CharField(max_length=150, unique=True)

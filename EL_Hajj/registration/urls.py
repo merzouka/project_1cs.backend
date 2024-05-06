@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import check_tirage_definition, fetch_winners, participants_tirage, registration,associate_tirage_with_baladiyas,baladiya_names_by_utilisateur, tirage_fini
+from .views import check_tirage_definition, fetch_winners, participants_tirage, registration,associate_tirage_with_baladiyas,baladiya_names_by_utilisateur, tirage_fini,winners_by_baladiya,visite_status
 from . import views
 urlpatterns = [
     path('registration', registration, name='registration'),
@@ -9,6 +9,8 @@ urlpatterns = [
     path('participants_tirage/<int:utilisateur_id>/', participants_tirage, name='participants_tirage'),
     path('check-tirage/<int:utilisateur_id>/', check_tirage_definition, name='check_tirage_definition'),
     path('tirage_fini/<int:utilisateur_id>/', tirage_fini, name='tirage_fini'),
-
+    path('winners_by_baladiya/<int:utilisateur_id>/', winners_by_baladiya, name='winners_by_baladiya'),
+    path('visite_status/', visite_status, name='visite_status'),
+    
 
 ]
