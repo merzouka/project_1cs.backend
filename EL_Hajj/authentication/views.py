@@ -7,12 +7,12 @@ from authentication.serializers import userSerializer
 from .models import PasswordReset, user
 from rest_framework import status
 from django.shortcuts import get_object_or_404,render
-
+from registration.models import Baladiya
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-
+from django.core.serializers import serialize
 from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
 from django.views.decorators.csrf import csrf_exempt
@@ -93,6 +93,7 @@ def register(request):
     # )
     if serializer.is_valid():
         serializer.save()
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=404)
 
@@ -207,16 +208,23 @@ def convert_to_serializable(data):
 
    
 @csrf_exempt 
-def get_user_info(request,email):
+def get_user_info(request,email): 
     if request.method == 'GET':
             try:
                 user_ = get_object_or_404(user,email=email)
+                baladiyas = Baladiya.objects.filter(id_utilisateur=user_.id)
+                print(baladiyas)
+                bala =[]
+                for baladiya in baladiyas :
+                    bala.append(baladiya.id)
+                
+                print(baladiya)
                 
                 user_info = {
                     'first_name' : user_.first_name,
             'last_name' : user_.last_name,
             'phone' : user_.phone,
-            'city' : user_.city,
+            "city" :user_.city,
             'province' : user_.province,
             'gender' : user_.gender,
             'email' : user_.email,
@@ -235,14 +243,68 @@ def get_user_info(request,email):
         return JsonResponse({'error':'methode not allowed'},status=405)
         
         
+@api_view(["POST"])       
+def update_profile(request,user_id):
+    user_ = get_object_or_404(user, id=user_id)
+    email = request.data.get("email")
+    phone = request.data.get("phone")
+    baladiya = request.data.get("baladiya")
+    first_name = request.data.get("first_name")
+    last_name = request.data.get("last_name")
+    photo = request.data.get("photo")
+    
+    if email : 
+        user_.email = email
         
+    if phone : 
+        user_.phone = phone
         
+    if baladiya:
+        if user_.role == "user":
+            baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
+            baladiyet.id_utilisateur.remove(user_id)
+            baladiyets = Baladiya.objects.get(name=baladiya)
+            baladiyets.id_utilisateur.add(user_id)
+            
+        else :
+            return JsonResponse({"message":"you are not allowed to change your baladiye"})
         
+    if last_name:
+        user_.last_name = last_name
         
+    if first_name:
+        user_.first_name = first_name
+        
+    if photo:
+        user_.personal_picture=photo
+        
+    user_.save()
+    return JsonResponse({"message":"profile updated successfully"})
         
     
 
-    
+
+def get_currently_logged_user(request):
+    if request.user.is_authenticated :
+        current_user = request.user
+        user_info = {
+                    'first_name' : current_user.first_name,
+            'last_name' : current_user.last_name,
+            'phone' : current_user.phone,
+            "city" :current_user.city,
+            'province' : current_user.province,
+            'gender' : current_user.gender,
+            'email' : current_user.email,
+            'dateOfBirth' : current_user.dateOfBirth,
+            'role' : current_user.role,
+            'is_email_verified' : current_user.is_email_verified
+                }
+        user_info = convert_to_serializable(user_info)
+                
+        return JsonResponse(user_info,content_type = 'application/json')
+        
+    else : 
+        return JsonResponse({"error":"not authenticated"})
     
 @api_view(["POST"])
 def logout_user(request):

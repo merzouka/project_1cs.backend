@@ -95,8 +95,8 @@ class user(AbstractBaseUser):
     last_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20,blank=False)
     dateOfBirth = models.DateField(blank=False)
-    city= models.CharField(max_length=50,blank=False)
     province = models.IntegerField(choices=PROVINCES)
+    city = models.CharField(max_length=200,default="")
     STATUS_CHOICES = [
         ('M', 'male'),
         ('F', 'female'),
