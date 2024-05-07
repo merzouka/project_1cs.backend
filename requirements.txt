@@ -12,7 +12,9 @@ daphne==4.1.2
 Django==5.0.4
 django-allauth==0.62.1
 django-cors-headers==4.3.1
+django-seed==0.3.1
 djangorestframework==3.15.1
+Faker==25.0.1
 hyperlink==21.0.0
 idna==3.7
 incremental==22.10.0
@@ -23,11 +25,13 @@ pyasn1==0.6.0
 pyasn1_modules==0.4.0
 pycparser==2.22
 pyOpenSSL==24.1.0
+python-dateutil==2.9.0.post0
 requests==2.31.0
 requests-oauthlib==2.0.0
 service-identity==24.1.0
 six==1.16.0
 sqlparse==0.5.0
+toposort==1.10
 Twisted==24.3.0
 txaio==23.1.1
 typing_extensions==4.11.0
