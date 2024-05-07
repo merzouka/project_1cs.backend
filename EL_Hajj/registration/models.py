@@ -71,7 +71,8 @@ class Tirage(models.Model):
     type_tirage=models.IntegerField(default=1)
     nombre_de_place=models.IntegerField(default=0)
     tranche_age=models.IntegerField(default=60, null=True)
-
+    nombre_waiting=models.IntegerField(default=0, null=True)
+    tirage_défini=models.BooleanField(default=False)
 
         
 class Baladiya(models.Model):
@@ -83,10 +84,13 @@ class Baladiya(models.Model):
         return self.name
       
 class Winners(models.Model):
-    nin = models.CharField(max_length=150, unique=True)
+    nin = models.IntegerField(unique=True)
+    visite = models.BooleanField(default=False)
+    payement = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.nin
+        return str(self.nin)
+
 
 class WaitingList(models.Model):
     nin = models.CharField(max_length=150, unique=True)
