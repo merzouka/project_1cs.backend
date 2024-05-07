@@ -6,6 +6,7 @@ urlpatterns = [
     path('fetch-winners/', fetch_winners, name='fetch_winners'),
     path('baladiya_names_by_utilisateur/', baladiya_names_by_utilisateur, name='baladiya_names_by_utilisateur'),
     path('associate-tirage', associate_tirage_with_baladiyas, name='associate_tirage_with_baladiyas'),
+ fix/auth
     path('tirage_fini/', tirage_fini, name='tirage_fini'),
     path('winners_by_baladiya/', winners_by_baladiya, name='winners_by_baladiya'),
     path('visite_status/', visite_status, name='visite_status'),
@@ -13,5 +14,7 @@ urlpatterns = [
     path('payment_status',views.payment_status, name='payment_status'),
     path('participants_tirage/', participants_tirage, name='participants_tirage'),
     path('check-tirage/', check_tirage_definition, name='check_tirage_definition'),
+
+ main
 
 ]
