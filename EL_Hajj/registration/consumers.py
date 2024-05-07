@@ -22,9 +22,9 @@ class TirageConsumer(WebsocketConsumer):
 
         for baladiya_name in baladiya_names:
             haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
-            haajas_in_city = Haaja.objects.filter(user__city=baladiya_name)
+            
             condidats.extend(haajs_in_city)
-            condidats.extend(haajas_in_city)
+            
 
         id_tirage = first_baladiya.tirage.id
         number_of_winners_needed = Tirage.objects.get(id=id_tirage).nombre_de_place
