@@ -8,7 +8,7 @@ from .models import PasswordReset, user
 from rest_framework import status
 from django.shortcuts import get_object_or_404,render
 from registration.models import Baladiya
-from rest_framework.decorators import api_view, parser_classes, renderer_classes
+from rest_framework.decorators import api_view, parser_classes, renderer_classes, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -16,6 +16,7 @@ from django.core.serializers import serialize
 from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
 
 
 @api_view(["POST"])
@@ -244,9 +245,11 @@ def get_user_info(request,email):
         return JsonResponse({'error':'methode not allowed'},status=405)
         
         
-@api_view(["POST"])       
-def update_profile(request,user_id):
-    user_ = get_object_or_404(user, id=user_id)
+@api_view(["PATCH"])       
+@renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    use_instance = request.user
     email = request.data.get("email")
     phone = request.data.get("phone")
     baladiya = request.data.get("baladiya")
@@ -255,13 +258,13 @@ def update_profile(request,user_id):
     photo = request.data.get("photo")
     
     if email : 
-        user_.email = email
+        use_instance.email = email
         
     if phone : 
-        user_.phone = phone
+        use_instance.phone = phone
         
     if baladiya:
-        if user_.role == "user":
+        if use_instance.role == "user":
             baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
             baladiyet.id_utilisateur.remove(user_id)
             baladiyets = Baladiya.objects.get(name=baladiya)
@@ -271,15 +274,15 @@ def update_profile(request,user_id):
             return JsonResponse({"message":"you are not allowed to change your baladiye"})
         
     if last_name:
-        user_.last_name = last_name
+        use_instance.last_name = last_name
         
     if first_name:
-        user_.first_name = first_name
+        use_instance.first_name = first_name
         
     if photo:
-        user_.personal_picture=photo
+        use_instance.personal_picture=photo
         
-    user_.save()
+    use_instance.save()
     return JsonResponse({"message":"profile updated successfully"})
         
     
@@ -301,7 +304,6 @@ def get_currently_logged_user(request):
             'role' : current_user.role,
             'is_email_verified' : current_user.is_email_verified
         }
-        print(user_info)
         return Response(user_info, status=200)
 
     else : 

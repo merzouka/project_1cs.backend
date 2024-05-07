@@ -60,14 +60,12 @@ def registration(request):
 
 
 
-
-
-
 @api_view(['GET'])
 @parser_classes([JSONParser])
-def baladiya_names_by_utilisateur(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def baladiya_names_by_utilisateur(request):
     try:
-        utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+        utilisateur_obj = request.user
         baladiya_names = utilisateur_obj.baladiya_set.values_list('name', flat=True)
         return Response({'baladiya_names': list(baladiya_names)}, status=200)
     except Exception as e:
@@ -79,14 +77,13 @@ def baladiya_names_by_utilisateur(request, utilisateur_id):
 
 @api_view(['POST'])
 @parser_classes([JSONParser])
+@parser_classes([IsAuthenticated])
 def associate_tirage_with_baladiyas(request):
-    
-    utilisateur_id = request.data.get('utilisateur_id')
     type_tirage = request.data.get('type_tirage')
     nombre_de_place = request.data.get('nombre_de_place')
     tranche_age = request.data.get('tranche_age')
     
-    utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+    utilisateur_obj = request.user
 
     
     baladiya_ids = utilisateur_obj.baladiya_set.values_list('id', flat=True)
@@ -112,9 +109,10 @@ def associate_tirage_with_baladiyas(request):
 
 
 @api_view(['GET'])
-def fetch_winners(request, id_utilisateur):
+@permission_classes([IsAuthenticated])
+def fetch_winners(request):
     try:
-        user_instance = get_object_or_404(user, id=id_utilisateur)
+        user_instance = request.user
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
         first_baladiya = Baladiya.objects.filter(id_utilisateur=id_utilisateur).first()
@@ -350,10 +348,9 @@ def fetch_winners(request, id_utilisateur):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
-def participants_tirage(request, utilisateur_id):
+def participants_tirage(request):
     try:
-        
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = request.user
         user_city = user_instance.city
         baladiya_instance = get_object_or_404(Baladiya, name=user_city)
         baladiya_tirage_id = baladiya_instance.tirage_id
@@ -389,9 +386,10 @@ def participants_tirage(request, utilisateur_id):
 
     
 @api_view(['GET'])
-def check_tirage_definition(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def check_tirage_definition(request):
     try:
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = user(id=request.user.id)
         baladiya_ids = user_instance.baladiya_set.values_list('id', flat=True)
 
         if len(baladiya_ids) == 0:
