@@ -61,14 +61,12 @@ def registration(request):
 
 
 
-
-
-
 @api_view(['GET'])
 @parser_classes([JSONParser])
-def baladiya_names_by_utilisateur(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def baladiya_names_by_utilisateur(request):
     try:
-        utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+        utilisateur_obj = request.user
         baladiya_names = utilisateur_obj.baladiya_set.values_list('name', flat=True)
         return Response({'baladiya_names': list(baladiya_names)}, status=200)
     except Exception as e:
@@ -80,14 +78,13 @@ def baladiya_names_by_utilisateur(request, utilisateur_id):
 
 @api_view(['POST'])
 @parser_classes([JSONParser])
+@parser_classes([IsAuthenticated])
 def associate_tirage_with_baladiyas(request):
-    
-    utilisateur_id = request.data.get('utilisateur_id')
     type_tirage = request.data.get('type_tirage')
     nombre_de_place = request.data.get('nombre_de_place')
     tranche_age = request.data.get('tranche_age')
     
-    utilisateur_obj = get_object_or_404(user, id=utilisateur_id)
+    utilisateur_obj = request.user
 
     
     baladiya_ids = utilisateur_obj.baladiya_set.values_list('id', flat=True)
@@ -113,9 +110,10 @@ def associate_tirage_with_baladiyas(request):
 
 
 @api_view(['GET'])
-def fetch_winners(request, id_utilisateur):
+@permission_classes([IsAuthenticated])
+def fetch_winners(request):
     try:
-        user_instance = get_object_or_404(user, id=id_utilisateur)
+        user_instance = request.user
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
         first_baladiya = Baladiya.objects.filter(id_utilisateur=id_utilisateur).first()
@@ -544,10 +542,9 @@ def fetch_winners(request, id_utilisateur):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
-def participants_tirage(request, utilisateur_id):
+def participants_tirage(request):
     try:
-        
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = request.user
         user_city = user_instance.city
         baladiya_instance = get_object_or_404(Baladiya, name=user_city)
         baladiya_tirage_id = baladiya_instance.tirage_id
@@ -579,16 +576,19 @@ def participants_tirage(request, utilisateur_id):
         return JsonResponse(serialized_data, status=200)
     
     except Exception as e:
- feature/appointment
-        return JsonResponse({'error': str(e)}, status=500)
+ fix/auth
+        return Response({'error': str(e)}, status=500)
+
 
 
  main
+ main
     
 @api_view(['GET'])
-def check_tirage_definition(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def check_tirage_definition(request):
     try:
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = user(id=request.user.id)
         baladiya_ids = user_instance.baladiya_set.values_list('id', flat=True)
 
         if len(baladiya_ids) == 0:
@@ -603,18 +603,21 @@ def check_tirage_definition(request, utilisateur_id):
         return JsonResponse({'tirage_definit': True}, status=200)
 
     except Exception as e:
- feature/appointment
-        return JsonResponse({'error': str(e)}, status=500)
+fix/auth
+          return Response({'error': str(e)}, status=500)
 
 
 @api_view(['GET'])
-def tirage_fini(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def tirage_fini(request):
     try:
-        baladiyat = Baladiya.objects.filter(id_utilisateur=utilisateur_id).first()
+        baladiyat = Baladiya.objects.filter(id_utilisateur=request.user.id).first()
+ main
         if baladiyat and baladiyat.tirage and baladiyat.tirage.tirage_défini:
             return JsonResponse({'message': 'tirage défini'})
         else:
             return JsonResponse({'message': 'tirage non défini'})
+ fix/auth
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -622,9 +625,10 @@ def tirage_fini(request, utilisateur_id):
 
 #for visite medical...........................................
 @api_view(['GET'])
-def winners_by_baladiya(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def winners_by_baladiya(request):
     try:
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = request.user
         
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
@@ -678,6 +682,71 @@ def visite_status(request):
         return JsonResponse({'error': str(e)}, status=500)
    
     
+#for payment.....................
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def winners_accepted(request):
+    try:
+        
+        user_instance = request.user
+        
+        
+        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        
+        
+        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
+        
+        
+        winners = Winners.objects.filter(
+            nin__in=user.objects.filter(city__in=baladiya_names).values('id'),
+            visite=True
+        )
+        
+        
+        winners_data = []
+        for winner in winners:
+            winner_user = get_object_or_404(user, id=winner.nin)
+            user_data = {
+                'id_user': winner_user.id,
+                'id_winner': winner.id,
+                'first_name': winner_user.first_name,
+                'last_name': winner_user.last_name,
+                'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+            }
+            winners_data.append(user_data)
+        
+        return JsonResponse(winners_data, status=200, safe=False)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
+
+@api_view(['POST'])
+def payment_status(request):
+    try:
+        
+        id_winner = request.data.get('id_winner')
+        status = request.data.get('status')
+        
+        
+        if not id_winner or not status:
+            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+        
+        
+        winner = get_object_or_404(Winners, id=id_winner)
+        
+        
+        if status.lower() == "payé":
+            
+            winner.payement = True
+            winner.save()
+            return JsonResponse({'message': 'Winner payment status updated successfully'}, status=200)
+        else:
+            
+            return JsonResponse({'message': 'Status is not "payé", no action taken'}, status=200)
+    
+    except Exception as e:
+       
+        return JsonResponse({'error': str(e)}, status=500)
 
  main

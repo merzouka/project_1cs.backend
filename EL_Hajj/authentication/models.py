@@ -62,6 +62,15 @@ PROVINCES = [
     (58, 'Wilaya de In Guezzam')  
 ]
 
+roles = [
+    ("user","user"),
+    ("administrateur","administrateur"),
+    ("responsable tirage","responsable tirage"),
+    ("medecin","medecin"),
+    ("Hedj","Hedj"),
+    ("banquier","banquier"),
+]
+
 
 class userManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -76,7 +85,7 @@ class userManager(BaseUserManager):
 
 class user(AbstractBaseUser):
     username = None
-    role = models.CharField(max_length=50,default="user")
+    role = models.CharField(choices=roles)
     email = models.EmailField(max_length=254,unique=True , null=False)
     is_email_verified = models.BooleanField(default=False)
     code = models.CharField(max_length=4, null=True)
@@ -86,8 +95,8 @@ class user(AbstractBaseUser):
     last_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20,blank=False)
     dateOfBirth = models.DateField(blank=False)
-    city= models.CharField(max_length=50,blank=False)
     province = models.IntegerField(choices=PROVINCES)
+    city = models.CharField(max_length=200,default="")
     STATUS_CHOICES = [
         ('M', 'male'),
         ('F', 'female'),
