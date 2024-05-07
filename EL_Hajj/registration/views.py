@@ -601,9 +601,10 @@ def check_tirage_definition(request):
 
 
 @api_view(['GET'])
-def tirage_fini(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def tirage_fini(request):
     try:
-        baladiyat = Baladiya.objects.filter(id_utilisateur=utilisateur_id).first()
+        baladiyat = Baladiya.objects.filter(id_utilisateur=request.user.id).first()
         if baladiyat and baladiyat.tirage and baladiyat.tirage.tirage_défini:
             return JsonResponse({'message': 'tirage défini'})
         else:
@@ -615,9 +616,10 @@ def tirage_fini(request, utilisateur_id):
 
 #for visite medical...........................................
 @api_view(['GET'])
-def winners_by_baladiya(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def winners_by_baladiya(request):
     try:
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = request.user
         
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
@@ -673,10 +675,11 @@ def visite_status(request):
     
 #for payment.....................
 @api_view(['GET'])
-def winners_accepted(request, utilisateur_id):
+@permission_classes([IsAuthenticated])
+def winners_accepted(request):
     try:
         
-        user_instance = get_object_or_404(user, id=utilisateur_id)
+        user_instance = request.user
         
         
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
