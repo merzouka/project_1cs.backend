@@ -20,6 +20,7 @@ from registration import routing
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('authentication.urls')),
-    path('',include('registration.urls'),)
+    path('',include('registration.urls')),
+    path('',include('administrateur.urls'))
    
 ]

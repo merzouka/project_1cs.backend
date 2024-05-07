@@ -7,15 +7,16 @@ from authentication.serializers import userSerializer
 from .models import PasswordReset, user
 from rest_framework import status
 from django.shortcuts import get_object_or_404,render
-
-from rest_framework.decorators import api_view, parser_classes
+from registration.models import Baladiya
+from rest_framework.decorators import api_view, parser_classes, renderer_classes, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-
+from django.core.serializers import serialize
 from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
 
 
 @api_view(["POST"])
@@ -93,6 +94,7 @@ def register(request):
     # )
     if serializer.is_valid():
         serializer.save()
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=404)
 
@@ -151,6 +153,7 @@ def reset_password(request):
 
 @api_view(['POST'])
 @parser_classes([JSONParser])
+@renderer_classes([JSONRenderer])
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -173,7 +176,7 @@ def login_user(request):
             
             
                 
-            return Response(JSONRenderer().render(resp),status=200)
+            return Response(resp,status=200)
             # if u.is_email_verified:
             # else:
             #     return Response({'message':'email is not verified'},status=400)
@@ -207,16 +210,23 @@ def convert_to_serializable(data):
 
    
 @csrf_exempt 
-def get_user_info(request,email):
+def get_user_info(request,email): 
     if request.method == 'GET':
             try:
                 user_ = get_object_or_404(user,email=email)
+                baladiyas = Baladiya.objects.filter(id_utilisateur=user_.id)
+                print(baladiyas)
+                bala =[]
+                for baladiya in baladiyas :
+                    bala.append(baladiya.id)
+                
+                print(baladiya)
                 
                 user_info = {
                     'first_name' : user_.first_name,
             'last_name' : user_.last_name,
             'phone' : user_.phone,
-            'city' : user_.city,
+            "city" :user_.city,
             'province' : user_.province,
             'gender' : user_.gender,
             'email' : user_.email,
@@ -235,15 +245,71 @@ def get_user_info(request,email):
         return JsonResponse({'error':'methode not allowed'},status=405)
         
         
+@api_view(["PATCH"])       
+@renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    use_instance = request.user
+    email = request.data.get("email")
+    phone = request.data.get("phone")
+    baladiya = request.data.get("baladiya")
+    first_name = request.data.get("first_name")
+    last_name = request.data.get("last_name")
+    photo = request.data.get("photo")
+    
+    if email : 
+        use_instance.email = email
         
+    if phone : 
+        use_instance.phone = phone
         
+    if baladiya:
+        if use_instance.role == "user":
+            baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
+            baladiyet.id_utilisateur.remove(user_id)
+            baladiyets = Baladiya.objects.get(name=baladiya)
+            baladiyets.id_utilisateur.add(user_id)
+            
+        else :
+            return JsonResponse({"message":"you are not allowed to change your baladiye"})
         
+    if last_name:
+        use_instance.last_name = last_name
         
+    if first_name:
+        use_instance.first_name = first_name
+        
+    if photo:
+        use_instance.personal_picture=photo
+        
+    use_instance.save()
+    return JsonResponse({"message":"profile updated successfully"})
         
     
 
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
+def get_currently_logged_user(request):
+    if request.user.is_authenticated :
+        current_user = request.user
+        user_info = {
+            'first_name' : current_user.first_name,
+            'last_name' : current_user.last_name,
+            'phone' : current_user.phone,
+            "city" :current_user.city,
+            'province' : current_user.province,
+            'gender' : current_user.gender,
+            'email' : current_user.email,
+            'dateOfBirth' : current_user.dateOfBirth,
+            'role' : current_user.role,
+            'is_email_verified' : current_user.is_email_verified
+        }
+        return Response(user_info, status=200)
+
+    else : 
+        return Response({"error":"not authenticated"}, status=400)
     
-    
+@api_view(["POST"])
 def logout_user(request):
     logout(request)
     return JsonResponse({"message": "Logout successful"})
