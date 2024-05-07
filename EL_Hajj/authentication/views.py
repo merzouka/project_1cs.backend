@@ -8,7 +8,7 @@ from .models import PasswordReset, user
 from rest_framework import status
 from django.shortcuts import get_object_or_404,render
 from registration.models import Baladiya
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, renderer_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -152,6 +152,7 @@ def reset_password(request):
 
 @api_view(['POST'])
 @parser_classes([JSONParser])
+@renderer_classes([JSONRenderer])
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -174,7 +175,7 @@ def login_user(request):
             
             
                 
-            return Response(JSONRenderer().render(resp),status=200)
+            return Response(resp,status=200)
             # if u.is_email_verified:
             # else:
             #     return Response({'message':'email is not verified'},status=400)
@@ -283,12 +284,13 @@ def update_profile(request,user_id):
         
     
 
-
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
 def get_currently_logged_user(request):
     if request.user.is_authenticated :
         current_user = request.user
         user_info = {
-                    'first_name' : current_user.first_name,
+            'first_name' : current_user.first_name,
             'last_name' : current_user.last_name,
             'phone' : current_user.phone,
             "city" :current_user.city,
@@ -298,13 +300,12 @@ def get_currently_logged_user(request):
             'dateOfBirth' : current_user.dateOfBirth,
             'role' : current_user.role,
             'is_email_verified' : current_user.is_email_verified
-                }
-        user_info = convert_to_serializable(user_info)
-                
-        return JsonResponse(user_info,content_type = 'application/json')
-        
+        }
+        print(user_info)
+        return Response(user_info, status=200)
+
     else : 
-        return JsonResponse({"error":"not authenticated"})
+        return Response({"error":"not authenticated"}, status=400)
     
 @api_view(["POST"])
 def logout_user(request):
