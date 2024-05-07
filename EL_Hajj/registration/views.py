@@ -39,7 +39,7 @@ def registration(request):
             'gender' : authenticated_user.gender
         }
         return JsonResponse(utilisateur_data)
-    
+
     elif request.method == 'POST':
         if authenticated_user.winner:
             last_winning_date = authenticated_user.winning_date
@@ -579,7 +579,11 @@ def participants_tirage(request, utilisateur_id):
         return JsonResponse(serialized_data, status=200)
     
     except Exception as e:
+ feature/appointment
         return JsonResponse({'error': str(e)}, status=500)
+
+
+ main
     
 @api_view(['GET'])
 def check_tirage_definition(request, utilisateur_id):
@@ -599,6 +603,7 @@ def check_tirage_definition(request, utilisateur_id):
         return JsonResponse({'tirage_definit': True}, status=200)
 
     except Exception as e:
+ feature/appointment
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -673,3 +678,6 @@ def visite_status(request):
         return JsonResponse({'error': str(e)}, status=500)
    
     
+
+
+ main
