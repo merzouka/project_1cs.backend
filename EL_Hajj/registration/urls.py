@@ -13,5 +13,4 @@ urlpatterns = [
     path('payment_status',views.payment_status, name='payment_status'),
     path('participants_tirage/', participants_tirage, name='participants_tirage'),
     path('check-tirage/', check_tirage_definition, name='check_tirage_definition'),
-
 ]

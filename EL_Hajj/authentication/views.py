@@ -255,7 +255,7 @@ def update_profile(request):
     baladiya = request.data.get("baladiya")
     first_name = request.data.get("first_name")
     last_name = request.data.get("last_name")
-    photo = request.data.get("photo")
+    photo = request.FILES["image"]
     
     if email : 
         use_instance.email = email
