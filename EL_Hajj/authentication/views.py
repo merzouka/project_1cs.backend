@@ -154,6 +154,7 @@ def reset_password(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 @renderer_classes([JSONRenderer])
+@csrf_exempt
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -249,41 +250,50 @@ def get_user_info(request,email):
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
-    use_instance = request.user
-    email = request.data.get("email")
-    phone = request.data.get("phone")
-    baladiya = request.data.get("baladiya")
-    first_name = request.data.get("first_name")
-    last_name = request.data.get("last_name")
-    photo = request.FILES["image"]
+    user_instance = request.user
+    print(request.FILES);
+    user_data = request.data.update({"personal_picture": request.FILES.get("image", None)})
+    serializer = userSerializer(user_instance, data=user_data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({ "message": "profile updated successfully" })
+    return Response({ "errors": serializer.errors })
     
-    if email : 
-        use_instance.email = email
-        
-    if phone : 
-        use_instance.phone = phone
-        
-    if baladiya:
-        if use_instance.role == "user":
-            baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
-            baladiyet.id_utilisateur.remove(user_id)
-            baladiyets = Baladiya.objects.get(name=baladiya)
-            baladiyets.id_utilisateur.add(user_id)
-            
-        else :
-            return JsonResponse({"message":"you are not allowed to change your baladiye"})
-        
-    if last_name:
-        use_instance.last_name = last_name
-        
-    if first_name:
-        use_instance.first_name = first_name
-        
-    if photo:
-        use_instance.personal_picture=photo
-        
-    use_instance.save()
-    return JsonResponse({"message":"profile updated successfully"})
+    #
+    # email = request.data.get("email")
+    # phone = request.data.get("phone")
+    # baladiya = request.data.get("baladiya")
+    # first_name = request.data.get("first_name")
+    # last_name = request.data.get("last_name")
+    # photo = request.FILES["image"]
+    # 
+    # if email : 
+    #     use_instance.email = email
+    #     
+    # if phone : 
+    #     use_instance.phone = phone
+    #     
+    # if baladiya:
+    #     if use_instance.role == "user":
+    #         baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
+    #         baladiyet.id_utilisateur.remove(user_id)
+    #         baladiyets = Baladiya.objects.get(name=baladiya)
+    #         baladiyets.id_utilisateur.add(user_id)
+    #         
+    #     else :
+    #         return JsonResponse({"message":"you are not allowed to change your baladiye"})
+    #     
+    # if last_name:
+    #     use_instance.last_name = last_name
+    #     
+    # if first_name:
+    #     use_instance.first_name = first_name
+    #     
+    # if photo:
+    #     use_instance.personal_picture=photo
+    #     
+    # use_instance.save()
+    # return JsonResponse({"message":"profile updated successfully"})
         
     
 
