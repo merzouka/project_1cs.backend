@@ -16,11 +16,6 @@ class Migration(migrations.Migration):
             field=models.IntegerField(default=0, null=True),
         ),
         migrations.AddField(
-            model_name='tirage',
-            name='tirage_défini',
-            field=models.BooleanField(default=False),
-        ),
-        migrations.AddField(
             model_name='winners',
             name='payement',
             field=models.BooleanField(default=False),
