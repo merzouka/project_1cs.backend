@@ -158,6 +158,7 @@ def reset_password(request):
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
+    remember = request.data.get("remember")
 
     if email and password:
         u= authenticate(request, username=email, password=password)
@@ -165,6 +166,8 @@ def login_user(request):
         if u is not None:
             # CHANGE: no verification of email on login
             login(request,u)
+            if remember:
+                request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
             
@@ -254,15 +257,17 @@ def update_profile(request):
     if len(request.FILES) > 0:
         user_instance.personal_picture = request.FILES["image"]
     serializer = userSerializer(user_instance, data=request.data, partial=True)
+    print(request.data)
     if serializer.is_valid():
         serializer.save()
-        return Response({ "message": "profile updated successfully" })
+        return Response(serializer.data)
     return Response({ "errors": serializer.errors }, 400)
         
     
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
 def get_currently_logged_user(request):
     if request.user.is_authenticated :
         current_user = request.user
