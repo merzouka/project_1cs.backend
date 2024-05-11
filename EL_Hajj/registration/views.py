@@ -174,7 +174,8 @@ def fetch_winners(request, id_utilisateur):
                     selected_winners.append({
                         'first_name': selected_condidat.user.first_name,
                         'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                        'gender':selected_condidat.user.gender
                     })
                     #condidats2.remove(selected_condidat)
                     condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -188,7 +189,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners.append({
                             'first_name': last_male_condidat.user.first_name,
                             'last_name': last_male_condidat.user.last_name,
-                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                            'gender':last_male_condidat.user.gender
                         })
                         condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
                         Winners.objects.create(nin=last_male_condidat.user.id)
@@ -198,7 +200,8 @@ def fetch_winners(request, id_utilisateur):
                     selected_winners.append({
                         'first_name': selected_condidat.user.first_name,
                         'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                        'gender':selected_condidat.user.gender
                     })
                     #condidats2.remove(selected_condidat)
                     condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -211,7 +214,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners.append({
                             'first_name': maahram_instance.first_name,
                             'last_name': maahram_instance.last_name,
-                            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                            'gender':maahram_instance.gender
                         })
                         Winners.objects.create(nin=maahram_instance.id)
                         if maahram_instance in condidats2:
@@ -227,7 +231,8 @@ def fetch_winners(request, id_utilisateur):
                     selected_waiting.append({
                         'first_name': selected_condidat.user.first_name,
                         'last_name': selected_condidat.user.last_name,
-                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                        'gender':selected_condidat.user.gender
                     })
                     
                     condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -241,7 +246,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_waiting.append({
                             'first_name': last_male_condidat.user.first_name,
                             'last_name': last_male_condidat.user.last_name,
-                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                            'gender':last_male_condidat.user.gender
                         })
                         condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
                         WaitingList.objects.create(nin=last_male_condidat.user.id)
@@ -251,7 +257,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_waiting.append({
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
-                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
                         })
                         
                         condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -264,7 +271,8 @@ def fetch_winners(request, id_utilisateur):
                             selected_waiting.append({
                                 'first_name': maahram_instance.first_name,
                                 'last_name': maahram_instance.last_name,
-                                'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                'gender':maahram_instance.gender
                             })
                             WaitingList.objects.create(nin=maahram_instance.id)
                             if maahram_instance in condidats2:
@@ -295,7 +303,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners1.append({
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
-                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
                         })
                         # condidats2_over_60.remove(selected_condidat)
                         condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -312,7 +321,8 @@ def fetch_winners(request, id_utilisateur):
                             selected_winners1.append({
                                 'first_name': last_male_condidat.user.first_name,
                                 'last_name': last_male_condidat.user.last_name,
-                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                'gender':last_male_condidat.user.gender
                             })
                             condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
                             Winners.objects.create(nin=last_male_condidat.user.id)
@@ -323,7 +333,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners1.append({
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
-                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
                         })
                         #condidats2_over_60.remove(selected_condidat)
                         condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -338,7 +349,8 @@ def fetch_winners(request, id_utilisateur):
                             selected_winners1.append({
                                 'first_name': maahram_instance.first_name,
                                 'last_name': maahram_instance.last_name,
-                                'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                'gender':maahram_instance.gender
                             })
                             Winners.objects.create(nin=maahram_instance.id)
                             if condidats2_over_60:
@@ -355,7 +367,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners2.append({
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
-                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
                         })
                         #condidats2_under_60.remove(selected_condidat)
                         condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
@@ -372,7 +385,8 @@ def fetch_winners(request, id_utilisateur):
                             selected_winners2.append({
                                 'first_name': last_male_condidat.user.first_name,
                                 'last_name': last_male_condidat.user.last_name,
-                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                'gender':last_male_condidat.user.gender
                             })
                             condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
                             Winners.objects.create(nin=last_male_condidat.user.id)
@@ -383,7 +397,8 @@ def fetch_winners(request, id_utilisateur):
                         selected_winners2.append({
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
-                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
                         })
                         #condidats2_under_60.remove(selected_condidat)
                         condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
@@ -398,7 +413,8 @@ def fetch_winners(request, id_utilisateur):
                                 selected_winners2.append({
                                     'first_name': maahram_instance.first_name,
                                     'last_name': maahram_instance.last_name,
-                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                    'gender':maahram_instance.gender
                                 })
                                 Winners.objects.create(nin=maahram_instance.id)
                                 if condidats2_under_60:
@@ -420,7 +436,8 @@ def fetch_winners(request, id_utilisateur):
                                 selected_waiting1.append({
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                    'gender':selected_condidat.user.gender
                                 })
                                 
                                 condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -437,7 +454,8 @@ def fetch_winners(request, id_utilisateur):
                                     selected_waiting1.append({
                                         'first_name': last_male_condidat.user.first_name,
                                         'last_name': last_male_condidat.user.last_name,
-                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                        'gender':last_male_condidat.user.gender
                                     })
                                     condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
                                     WaitingList.objects.create(nin=last_male_condidat.user.id)
@@ -448,7 +466,8 @@ def fetch_winners(request, id_utilisateur):
                                 selected_waiting1.append({
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                    'gender':selected_condidat.user.gender
                                 })
                                 
                                 condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -463,7 +482,8 @@ def fetch_winners(request, id_utilisateur):
                                     selected_waiting1.append({
                                         'first_name': maahram_instance.first_name,
                                         'last_name': maahram_instance.last_name,
-                                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                        'gender':maahram_instance.gender
                                     })
                                     WaitingList.objects.create(nin=maahram_instance.id)
                                     if condidats2_over_60:
@@ -480,7 +500,8 @@ def fetch_winners(request, id_utilisateur):
                                 selected_waiting2.append({
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                    'gender':selected_condidat.user.gender
                                 })
                                 
                                 condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
@@ -497,7 +518,8 @@ def fetch_winners(request, id_utilisateur):
                                     selected_waiting2.append({
                                         'first_name': last_male_condidat.user.first_name,
                                         'last_name': last_male_condidat.user.last_name,
-                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None
+                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                        'gender':last_male_condidat.user.gender
                                     })
                                     condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
                                     WaitingList.objects.create(nin=last_male_condidat.user.id)
@@ -508,7 +530,8 @@ def fetch_winners(request, id_utilisateur):
                                 selected_waiting2.append({
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None
+                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                    'gender':selected_condidat.user.gender
                                 })
                                 
                                 condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
@@ -523,7 +546,8 @@ def fetch_winners(request, id_utilisateur):
                                         selected_waiting2.append({
                                             'first_name': maahram_instance.first_name,
                                             'last_name': maahram_instance.last_name,
-                                            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None
+                                            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                            'gender':maahram_instance.gender
                                         })
                                         WaitingList.objects.create(nin=maahram_instance.id)
                                         if condidats2_under_60:
