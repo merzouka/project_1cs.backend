@@ -152,7 +152,6 @@ def reset_password(request):
 
 
 @api_view(['POST'])
-@parser_classes([JSONParser])
 @renderer_classes([JSONRenderer])
 @csrf_exempt
 def login_user(request):
@@ -307,8 +306,12 @@ def default(request):
         return Response(JSONRenderer().render({ "message": "email sent successfully" }))
     except:
         return Response(JSONRenderer().render({ "message": "failed to send email" }), 400)
-    
-   
 
-        
-        
+@api_view(["PATCH"])
+def image_upload(request):
+    user_instance = user.objects.get(email="ya.merzouka@esi-sba.dz")
+    user_instance.personal_picture = request.FILES["image"]
+    user_instance.save()
+    print(user_instance.personal_picture.__dict__)
+    return Response({ "url": f"{user_instance.personal_picture.metadata['secure_url']}" })
+    
