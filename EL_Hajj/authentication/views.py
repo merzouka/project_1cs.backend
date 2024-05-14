@@ -256,10 +256,12 @@ def update_profile(request):
     if len(request.FILES) > 0:
         user_instance.personal_picture = request.FILES["image"]
     serializer = userSerializer(user_instance, data=request.data, partial=True)
-    print(request.data)
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        url = user_instance.personal_picture.metadata["secure_url"]
+        response = serializer.data
+        response["personal_picture"] = url
+        return Response(response)
     return Response({ "errors": serializer.errors }, 400)
         
     
@@ -269,7 +271,7 @@ def update_profile(request):
 @permission_classes([IsAuthenticated])
 def get_currently_logged_user(request):
     if request.user.is_authenticated :
-        current_user = request.user
+        current_user = user.objects.get(email=request.user.email)
         user_info = {
             'first_name' : current_user.first_name,
             'last_name' : current_user.last_name,
@@ -280,7 +282,8 @@ def get_currently_logged_user(request):
             'email' : current_user.email,
             'dateOfBirth' : current_user.dateOfBirth,
             'role' : current_user.role,
-            'is_email_verified' : current_user.is_email_verified
+            'is_email_verified' : current_user.is_email_verified,
+            'personal_picture': current_user.personal_picture.url,
         }
         return Response(user_info, status=200)
 
