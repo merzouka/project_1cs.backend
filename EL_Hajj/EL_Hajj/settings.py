@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import cloudinary
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -36,6 +37,7 @@ SITE_ID = 1
 
 INSTALLED_APPS = [
     'daphne',
+    "cloudinary",
     'registration',
     'corsheaders',
     'rest_framework',
@@ -166,3 +168,13 @@ AUTHENTICATION_BACKENDS = (
 )
 
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+
+# cloudinary set up
+CLOUDINARY_URL="cloudinary://377993774685948:Lnk5cmm-umXYUgQjqVxyG2Ei3u0@dpwgc1zvo"
+# Configuration       
+cloudinary.config( 
+    cloud_name = "dpwgc1zvo", 
+    api_key = "377993774685948", 
+    api_secret = "Lnk5cmm-umXYUgQjqVxyG2Ei3u0", # Click 'View Credentials' below to copy your API secret
+    secure=True
+)

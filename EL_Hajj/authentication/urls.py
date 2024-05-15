@@ -12,7 +12,8 @@ urlpatterns = [
     path('auth/logout',views.logout_user,name='logout'),
     path("auth/profile/<str:email>",views.get_user_info),
     path("auth/update-profile",views.update_profile),
-    path("auth/currently_user",views.get_currently_logged_user)
+    path("auth/currently_user",views.get_currently_logged_user),
+    path("auth/image_upload", views.image_upload),
     
     
 ]

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from cloudinary.models import CloudinaryField
 
 PROVINCES = [
     (1, 'Wilaya d''Adrar'),
@@ -105,14 +106,13 @@ class user(AbstractBaseUser):
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
     winner=models.BooleanField(default=False)
     winning_date = models.DateField(null=True , default=None)
-    personal_picture = models.ImageField(upload_to='user_pictures/' , null=True , default=None)
+    personal_picture = CloudinaryField("image", default=None)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS=['role','password']
     objects = userManager()
 
     def __str__(self):
         return self.email   
-    
 
     
 

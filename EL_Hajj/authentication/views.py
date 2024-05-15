@@ -152,11 +152,12 @@ def reset_password(request):
 
 
 @api_view(['POST'])
-@parser_classes([JSONParser])
 @renderer_classes([JSONRenderer])
+@csrf_exempt
 def login_user(request):
     email = request.data.get('email')
     password = request.data.get('password')
+    remember = request.data.get("remember")
 
     if email and password:
         u= authenticate(request, username=email, password=password)
@@ -164,6 +165,8 @@ def login_user(request):
         if u is not None:
             # CHANGE: no verification of email on login
             login(request,u)
+            if remember:
+                request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
             
@@ -249,49 +252,26 @@ def get_user_info(request,email):
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
 def update_profile(request):
-    use_instance = request.user
-    email = request.data.get("email")
-    phone = request.data.get("phone")
-    baladiya = request.data.get("baladiya")
-    first_name = request.data.get("first_name")
-    last_name = request.data.get("last_name")
-    photo = request.FILES["image"]
-    
-    if email : 
-        use_instance.email = email
-        
-    if phone : 
-        use_instance.phone = phone
-        
-    if baladiya:
-        if use_instance.role == "user":
-            baladiyet = Baladiya.objects.get(id_utilisateur=user_id)
-            baladiyet.id_utilisateur.remove(user_id)
-            baladiyets = Baladiya.objects.get(name=baladiya)
-            baladiyets.id_utilisateur.add(user_id)
-            
-        else :
-            return JsonResponse({"message":"you are not allowed to change your baladiye"})
-        
-    if last_name:
-        use_instance.last_name = last_name
-        
-    if first_name:
-        use_instance.first_name = first_name
-        
-    if photo:
-        use_instance.personal_picture=photo
-        
-    use_instance.save()
-    return JsonResponse({"message":"profile updated successfully"})
+    user_instance = request.user
+    if len(request.FILES) > 0:
+        user_instance.personal_picture = request.FILES["image"]
+    serializer = userSerializer(user_instance, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        url = user_instance.personal_picture.metadata["secure_url"]
+        response = serializer.data
+        response["personal_picture"] = url
+        return Response(response)
+    return Response({ "errors": serializer.errors }, 400)
         
     
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
 def get_currently_logged_user(request):
     if request.user.is_authenticated :
-        current_user = request.user
+        current_user = user.objects.get(email=request.user.email)
         user_info = {
             'first_name' : current_user.first_name,
             'last_name' : current_user.last_name,
@@ -302,7 +282,8 @@ def get_currently_logged_user(request):
             'email' : current_user.email,
             'dateOfBirth' : current_user.dateOfBirth,
             'role' : current_user.role,
-            'is_email_verified' : current_user.is_email_verified
+            'is_email_verified' : current_user.is_email_verified,
+            'personal_picture': current_user.personal_picture.url,
         }
         return Response(user_info, status=200)
 
@@ -328,8 +309,12 @@ def default(request):
         return Response(JSONRenderer().render({ "message": "email sent successfully" }))
     except:
         return Response(JSONRenderer().render({ "message": "failed to send email" }), 400)
-    
-   
 
-        
-        
+@api_view(["PATCH"])
+def image_upload(request):
+    user_instance = user.objects.get(email="ya.merzouka@esi-sba.dz")
+    user_instance.personal_picture = request.FILES["image"]
+    user_instance.save()
+    print(user_instance.personal_picture.__dict__)
+    return Response({ "url": f"{user_instance.personal_picture.metadata['secure_url']}" })
+    
