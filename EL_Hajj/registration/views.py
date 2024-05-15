@@ -51,6 +51,11 @@ def registration(request):
         haaj_serializer = HaajSerializer(data=serializer_data, context={'request': request})
         if haaj_serializer.is_valid():
             haaj_instance = haaj_serializer.save()
+            authenticated_user.winner = True
+            authenticated_user.nombreInscription += 1
+            authenticated_user.winning_date = timezone.now() 
+            authenticated_user.role = "hedj"
+            authenticated_user.save()
             return Response("Success", status=status.HTTP_201_CREATED)
         return Response(haaj_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
