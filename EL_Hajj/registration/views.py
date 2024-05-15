@@ -600,13 +600,7 @@ def participants_tirage(request):
         return JsonResponse(serialized_data, status=200)
     
     except Exception as e:
- fix/auth
         return Response({'error': str(e)}, status=500)
-
-
-
- main
- main
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -627,7 +621,6 @@ def check_tirage_definition(request):
         return JsonResponse({'tirage_definit': True}, status=200)
 
     except Exception as e:
-fix/auth
           return Response({'error': str(e)}, status=500)
 
 
@@ -636,12 +629,10 @@ fix/auth
 def tirage_fini(request):
     try:
         baladiyat = Baladiya.objects.filter(id_utilisateur=request.user.id).first()
- main
         if baladiyat and baladiyat.tirage and baladiyat.tirage.tirage_défini:
             return JsonResponse({'message': 'tirage défini'})
         else:
             return JsonResponse({'message': 'tirage non défini'})
- fix/auth
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -773,4 +764,3 @@ def payment_status(request):
        
         return JsonResponse({'error': str(e)}, status=500)
 
- main
