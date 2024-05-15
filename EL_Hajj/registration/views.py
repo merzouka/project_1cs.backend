@@ -201,7 +201,8 @@ def fetch_winners(request, id_utilisateur):
                         'first_name': selected_condidat.user.first_name,
                         'last_name': selected_condidat.user.last_name,
                         'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                        'gender':selected_condidat.user.gender
+                        'gender':selected_condidat.user.gender,
+                        'maahram_id':selected_condidat.maahram_id
                     })
                     #condidats2.remove(selected_condidat)
                     condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -258,7 +259,8 @@ def fetch_winners(request, id_utilisateur):
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
                             'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                            'gender':selected_condidat.user.gender
+                            'gender':selected_condidat.user.gender,
+                            'maahram_id':selected_condidat.maahram_id
                         })
                         
                         condidats2 = list(filter((selected_condidat).__ne__, condidats2))
@@ -334,7 +336,8 @@ def fetch_winners(request, id_utilisateur):
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
                             'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                            'gender':selected_condidat.user.gender
+                            'gender':selected_condidat.user.gender,
+                            'maahram_id':selected_condidat.maahram_id
                         })
                         #condidats2_over_60.remove(selected_condidat)
                         condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -398,7 +401,8 @@ def fetch_winners(request, id_utilisateur):
                             'first_name': selected_condidat.user.first_name,
                             'last_name': selected_condidat.user.last_name,
                             'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                            'gender':selected_condidat.user.gender
+                            'gender':selected_condidat.user.gender,
+                            'maahram_id':selected_condidat.maahram_id
                         })
                         #condidats2_under_60.remove(selected_condidat)
                         condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
@@ -467,7 +471,8 @@ def fetch_winners(request, id_utilisateur):
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender
+                                    'gender':selected_condidat.user.gender,
+                                    'maahram_id':selected_condidat.maahram_id
                                 })
                                 
                                 condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
@@ -531,7 +536,8 @@ def fetch_winners(request, id_utilisateur):
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender
+                                    'gender':selected_condidat.user.gender,
+                                    'maahram_id':selected_condidat.maahram_id
                                 })
                                 
                                 condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
