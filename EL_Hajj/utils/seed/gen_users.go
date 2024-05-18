@@ -124,7 +124,7 @@ func genLines(role string, cities []City, number int, passwords []string, passwo
         city := getCity(cities)
         gender := getGender()
         result = append(result, fmt.Sprintf(
-            "(%s,%s,%s,%s,%s,%s,%d,%s,%s,%s)", 
+            "('%s','%s','%s','%s','%s','%s',%d,'%s','%s','%s')", 
             passwords[passwordBase + i],
             getEmail(city, role, i),
             getFirstName(gender),
