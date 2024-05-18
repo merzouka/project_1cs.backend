@@ -179,18 +179,21 @@ func genLines(role string, cities []City, number int, passwords []string, passwo
         } else {
             gender = "male"
         }
+        // id,password,email,first_name,last_name,\"nombreInscription\",phone,\"dateOfBirth\",province,gender,role,winner,city
         result = append(result, fmt.Sprintf(
-            "(%d,'%s','%s','%s','%s','%s','%s',%d,'%s','%s','%s')", 
+            "(%d,'%s','%s','%s','%s',%d,'%s','%s',%d,'%s','%s',%s,'%s')", 
             passwordBase + i,
             passwords[passwordBase + i],
             getEmail(city, role, i),
             getFirstName(gender),
             getLastName(),
+            0,
             getPhone(),
             getDateOfBirth(),
             city.Province,
             genderAlias,
             getRole(role),
+            "false",
             strings.Replace(city.Name, "'", "''", -1),
             ))
     }
@@ -217,18 +220,21 @@ func genHajjLines(
         } else {
             gender = "F"
         }
+        // id,password,email,first_name,last_name,\"nombreInscription\",phone,\"dateOfBirth\",province,gender,role,winner,city
         result = append(result, fmt.Sprintf(
-            "(%d,'%s','%s','%s','%s','%s','%s',%d,'%s','%s','%s')", 
+            "(%d,'%s','%s','%s','%s',%d,'%s','%s',%d,'%s','%s',%s,'%s')", 
             passwordBase + i,
             passwords[passwordBase + i],
             getEmail(city, role, i),
             firstNames[i],
             lastNames[i],
+            1,
             getPhone(),
             getDateOfBirth(),
             city.Province,
             gender,
             getRole(role),
+            "false",
             strings.Replace(city.Name, "'", "''", -1),
             ))
     }
@@ -268,7 +274,7 @@ func genUsers(
     data, err := os.ReadFile("./passwords.txt")
     check(err)
     passwords := strings.Split(string(data), "\n")
-    columns := "id,password,email,first_name,last_name,phone,dateOfBirth,province,gender,role,city"
+    columns := "id,password,email,first_name,last_name,\"nombreInscription\",phone,\"dateOfBirth\",province,gender,role,winner,city"
     lines := []string{}
     index := base
     for _, roleCount := range roleCountArray {
@@ -480,7 +486,7 @@ func genRegistrations(arabicFistNames []string, arabicLastNames []string, gender
             mahramId = strconv.Itoa(mahramIds[rand.Intn(len(mahramIds))])
         }
         result = append(result, fmt.Sprintf(
-            "(%d,'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s',%s,%s)",
+            "(%d,'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s',%s,%s,'%s')",
             registrationBase + i,
             arabicFistNames[i],
             arabicLastNames[i],
@@ -494,9 +500,10 @@ func genRegistrations(arabicFistNames []string, arabicLastNames []string, gender
             getPhone(),
             strconv.Itoa(userId),
             mahramId,
+            "image/upload/v1715700815/qiyoqye42hplvtq3oywf.png",
             ))
     }
-    columns := "(id,first_name_arabic,last_name_arabic,mother_name,father_name,NIN,card_expiration_date,passport_id,passport_expiration_date,nationality,phone_number,user_id,maahram_id)"
+    columns := "(id,first_name_arabic,last_name_arabic,mother_name,father_name,\"NIN\",card_expiration_date,passport_id,passport_expiration_date,nationality,phone_number,user_id,maahram_id,personal_picture)"
     err := os.WriteFile("./queries/registrations.sql", []byte(fmt.Sprintf(
         "INSERT INTO registration_haaj %s VALUES %s",
         columns,
