@@ -27,6 +27,7 @@ func check(err error) {
 }
 
 var base int = 0
+var mahramIds []int = []int{}
 var registrationBase int = 0
 // admin, doctor, drawing_manager, payment_manager, user, hajj
 // accounts = 1 + 5 + 5 + 5 + 50 + 35
@@ -171,6 +172,7 @@ func genLines(role string, cities []City, number int, passwords []string, passwo
     result := []string{}
     // id,password,email,first_name,last_name,phone,dateOfBirth,province,gender,role,city
     for i := 0; i < number; i++ {
+        id := passwordBase + i
         city := getCity(cities)
         genderAlias := getGender()
         gender := ""
@@ -178,12 +180,15 @@ func genLines(role string, cities []City, number int, passwords []string, passwo
             gender = "female"
         } else {
             gender = "male"
+            if (role == "user") {
+                mahramIds = append(mahramIds, id)
+            }
         }
         // id,password,email,first_name,last_name,\"nombreInscription\",phone,\"dateOfBirth\",province,gender,role,winner,city
         result = append(result, fmt.Sprintf(
             "(%d,'%s','%s','%s','%s',%d,'%s','%s',%d,'%s','%s',%s,'%s')", 
-            passwordBase + i,
-            passwords[passwordBase + i],
+            id,
+            passwords[id],
             getEmail(city, role, i),
             getFirstName(gender),
             getLastName(),
@@ -214,6 +219,7 @@ func genHajjLines(
     // id,password,email,first_name,last_name,phone,dateOfBirth,province,gender,role,city
     for i := 0; i < number; i++ {
         city := getCity(cities)
+        id := passwordBase + i
         gender := ""
         if (genders[i] == "male") {
             gender = "M"
@@ -223,8 +229,8 @@ func genHajjLines(
         // id,password,email,first_name,last_name,\"nombreInscription\",phone,\"dateOfBirth\",province,gender,role,winner,city
         result = append(result, fmt.Sprintf(
             "(%d,'%s','%s','%s','%s',%d,'%s','%s',%d,'%s','%s',%s,'%s')", 
-            passwordBase + i,
-            passwords[passwordBase + i],
+            id,
+            passwords[id],
             getEmail(city, role, i),
             firstNames[i],
             lastNames[i],
@@ -371,20 +377,7 @@ func getExpirationDate() string {
 }
 
 func getAvailableMahramIds() []int {
-    ids := []int{}
-    index := base
-    for _, roleCount := range roleCountArray {
-        role := getRoleCountRole(roleCount)
-        count := getRoleCountCount(roleCount)
-        if (role == "user") {
-            for i := 0; i < count; i++ {
-                ids = append(ids, index + i)
-            }
-            break
-        }
-        index += count
-    }
-    return ids
+    return mahramIds
 }
 
 func getAvailableUserIds() []int {
