@@ -593,7 +593,7 @@ def participants_tirage(request):
             haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
             for haaj in haajs_in_city:
                 haaj_data = {
-                    'id': haaj.id,
+                    'NIN': haaj.NIN,
                     'first_name': haaj.user.first_name,
                     'last_name': haaj.user.last_name,
                     'personal_picture': haaj.user.personal_picture.url if haaj.user.personal_picture else None,
