@@ -121,7 +121,7 @@ def fetch_winners(request):
         user_instance = request.user
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
-        first_baladiya = Baladiya.objects.filter(id_utilisateur=id_utilisateur).first()
+        first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
         
         if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_défini:
             return JsonResponse({'message': 'Tirage déjà fini'}, status=200)
