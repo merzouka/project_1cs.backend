@@ -600,7 +600,7 @@ def participants_tirage(request):
                 }
                 serialized_data.append(haaj_data)
         
-        return JsonResponse(serialized_data, status=200)
+        return Response(serialized_data, status=200)
     
     except Exception as e:
         return Response({'error': str(e)}, status=500) 
