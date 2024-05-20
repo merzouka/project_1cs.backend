@@ -258,7 +258,7 @@ def update_profile(request):
     serializer = userSerializer(user_instance, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        url = user_instance.personal_picture.metadata["secure_url"]
+        url = user_instance.personal_picture.metadata["secure_url"] if user_instance.personal_picture != None else None
         response = serializer.data
         response["personal_picture"] = url
         return Response(response)
@@ -283,7 +283,7 @@ def get_currently_logged_user(request):
             'dateOfBirth' : current_user.dateOfBirth,
             'role' : current_user.role,
             'is_email_verified' : current_user.is_email_verified,
-            'personal_picture': current_user.personal_picture.url,
+            'personal_picture': current_user.personal_picture.url if current_user.personal_picture != None else None,
         }
         return Response(user_info, status=200)
 
