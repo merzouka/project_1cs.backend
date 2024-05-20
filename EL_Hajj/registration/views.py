@@ -139,7 +139,9 @@ def fetch_winners(request):
             baladiya_names = Baladiya.objects.filter(tirage_id=tirage_baladiya).values_list('name', flat=True)
 
         if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_défini:
-            winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner=True).values_list('id', flat=True)).values_list('nin', flat=True)
+            # removed winner field since it is not in data set, when algo executed it didn't set it
+            # winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner).values_list('id', flat=True)).values_list('nin', flat=True)
+            winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)).values_list('nin', flat=True)
             selected_winners = []
             for winner_id in winner_user_ids:
                 winner = user.objects.get(id=winner_id)
