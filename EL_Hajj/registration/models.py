@@ -80,6 +80,7 @@ class Baladiya(models.Model):
     id_utilisateur = models.ManyToManyField(user)
     wilaya=models.IntegerField(null=True,default=None)
     tirage= models.ForeignKey(Tirage,on_delete=models.CASCADE,default=None, null=True,) 
+    tirage_défini=models.BooleanField(default=False)
     def __str__(self):
         return self.name
       
