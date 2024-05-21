@@ -116,6 +116,7 @@ def associate_tirage_with_baladiyas(request):
 
 
 @api_view(['GET'])
+@renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
 def fetch_winners(request):
     try:
@@ -163,6 +164,7 @@ def fetch_winners(request):
                         'maahram_id': winner.maahram_id
                 }
                 selected_winners.append(winner_json)    
+            return Response({ "winners": selected_winners }, 200)
 
 
 
