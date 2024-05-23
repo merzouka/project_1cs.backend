@@ -7,3 +7,4 @@
 - [not changed in code] return just id the consumer of the api doesn't need to know what the id is used for
 - [not changed] use more descriptive names for: urls, views
 - changed return of winners, for consistency and ease of consumption
+- changed id_winner and status check as status can be false or null
