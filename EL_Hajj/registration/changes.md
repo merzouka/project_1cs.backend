@@ -5,4 +5,5 @@
 - use `PATCH` method for status update as it is more appropriate (the manager is _updating_ the status of the winner)
 - don't send redundant user id info
 - [not changed in code] return just id the consumer of the api doesn't need to know what the id is used for
-
+- [not changed] use more descriptive names for: urls, views
+- changed return of winners, for consistency and ease of consumption

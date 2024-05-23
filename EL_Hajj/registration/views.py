@@ -730,33 +730,31 @@ def tirage_défini(request):
 @permission_classes([IsAuthenticated])
 @renderer_classes([JSONRenderer])
 def winners_by_baladiya(request):
-    try:
-        user_instance = request.user
-        
-        baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
-        baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
-        
-        user_ids_in_city = user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)
-        winners = Winners.objects.filter(nin__in=user_ids_in_city)
-        
-        winners_data = []
-        for winner in winners:
-            winner_user = get_object_or_404(user, id=winner.nin)
-            user_data = {
-                'id_winner': winner.id,
-                'first_name': winner_user.first_name,
-                'last_name': winner_user.last_name,
-                'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
-                'status': winner.visite,
-            }
-            winners_data.append(user_data)
-        
-        return Response(winners_data, status=200, safe=False)
-    
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
+    user_instance = request.user
 
+    baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+    baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
 
+    user_ids_in_city = user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)
+    winners = Winners.objects.filter(nin__in=user_ids_in_city)
+
+    winners_data = []
+    for winner in winners:
+        winner_user = get_object_or_404(user, id=winner.nin)
+        user_data = {
+            'id_winner': winner.id,
+            'first_name': winner_user.first_name,
+            'last_name': winner_user.last_name,
+            'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+            'status': winner.visite,
+        }
+        winners_data.append(user_data)
+
+        return Response({ 'winners': winners_data }, status=200, safe=False)
+    # try:
+    # 
+    # except Exception as e:
+    #     return Response({'error': str(e)}, status=500)
 
 
 
@@ -782,8 +780,7 @@ def view_tirage(request):
         return Response({'error': str(e)}, status=500)
 
 
-
-@api_view(['POST'])
+@api_view(['PATCH'])
 @renderer_classes([JSONRenderer])
 def visite_status(request):
 
@@ -842,13 +839,13 @@ def winners_accepted(request):
             }
             winners_data.append(user_data)
         
-        return Response(winners_data, status=200, safe=False)
+        return Response({ 'winners': winners_data }, status=200, safe=False)
     
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
 
-@api_view(['POST'])
+@api_view(['PATCH'])
 @renderer_classes([JSONRenderer])
 def payment_status(request):
     try:
