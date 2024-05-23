@@ -692,6 +692,7 @@ def tirage_fini(request):
 #for visite medical...........................................
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@renderer_classes([JSONRenderer])
 def winners_by_baladiya(request):
     try:
         user_instance = request.user
@@ -706,22 +707,23 @@ def winners_by_baladiya(request):
         for winner in winners:
             winner_user = get_object_or_404(user, id=winner.nin)
             user_data = {
-                'id_user': winner_user.id,
                 'id_winner': winner.id,
                 'first_name': winner_user.first_name,
                 'last_name': winner_user.last_name,
                 'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+                'status': winner.visite,
             }
             winners_data.append(user_data)
         
-        return JsonResponse(winners_data, status=200, safe=False)
+        return Response(winners_data, status=200, safe=False)
     
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
 
 
 
 @api_view(['POST'])
+@renderer_classes([JSONRenderer])
 def visite_status(request):
 
     try:
@@ -730,27 +732,25 @@ def visite_status(request):
         status = request.data.get('status')
             
         if not id_winner or not status:
-            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+            return Response({'error': 'Both id_winner and status are required'}, status=400)
             
         try:
             winner = Winners.objects.get(id=id_winner)
         except Winners.DoesNotExist:
-            return JsonResponse({'error': 'Winner with the provided ID does not exist'}, status=404)
+            return Response({'error': 'Winner with the provided ID does not exist'}, status=404)
             
-        if status.lower() == "accepted":
-            winner.visite = True
-            winner.save()
-            return JsonResponse({'message': 'Winner visit status updated successfully'}, status=200)
-        else:
-            return JsonResponse({'message': 'Status is not "accepted", no action taken'}, status=200)
+        winner.visite = status
+        winner.save()
+        return Response({'message': 'Winner visit status updated successfully'}, status=200)
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
    
     
 #for payment.....................
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@renderer_classes([JSONRenderer])
 def winners_accepted(request):
     try:
         
@@ -773,21 +773,22 @@ def winners_accepted(request):
         for winner in winners:
             winner_user = get_object_or_404(user, id=winner.nin)
             user_data = {
-                'id_user': winner_user.id,
                 'id_winner': winner.id,
                 'first_name': winner_user.first_name,
                 'last_name': winner_user.last_name,
                 'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+                'status': winner.payement,
             }
             winners_data.append(user_data)
         
-        return JsonResponse(winners_data, status=200, safe=False)
+        return Response(winners_data, status=200, safe=False)
     
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
 
 
 @api_view(['POST'])
+@renderer_classes([JSONRenderer])
 def payment_status(request):
     try:
         
@@ -796,7 +797,7 @@ def payment_status(request):
         
         
         if not id_winner or not status:
-            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+            return Response({'error': 'Both id_winner and status are required'}, status=400)
         
         
         winner = get_object_or_404(Winners, id=id_winner)
@@ -806,12 +807,12 @@ def payment_status(request):
             
             winner.payement = True
             winner.save()
-            return JsonResponse({'message': 'Winner payment status updated successfully'}, status=200)
+            return Response({'message': 'Winner payment status updated successfully'}, status=200)
         else:
             
-            return JsonResponse({'message': 'Status is not "payé", no action taken'}, status=200)
+            return Response({'message': 'Status is not "payé", no action taken'}, status=200)
     
     except Exception as e:
        
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
 

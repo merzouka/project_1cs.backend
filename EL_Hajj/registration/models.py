@@ -86,8 +86,8 @@ class Baladiya(models.Model):
       
 class Winners(models.Model):
     nin = models.IntegerField(unique=True)
-    visite = models.BooleanField(default=False)
-    payement = models.BooleanField(default=False)
+    visite = models.BooleanField(default=None, null=True)
+    payement = models.BooleanField(default=None, null=True)
 
     def __str__(self):
         return str(self.nin)
