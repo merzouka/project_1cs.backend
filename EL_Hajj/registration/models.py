@@ -72,22 +72,22 @@ class Tirage(models.Model):
     nombre_de_place=models.IntegerField(default=0)
     tranche_age=models.IntegerField(default=60, null=True)
     nombre_waiting=models.IntegerField(default=0, null=True)
+    tirage_fini=models.BooleanField(default=False)
     tirage_défini=models.BooleanField(default=False)
-
         
 class Baladiya(models.Model):
     name = models.CharField(max_length=100)
     id_utilisateur = models.ManyToManyField(user)
     wilaya=models.IntegerField(null=True,default=None)
     tirage= models.ForeignKey(Tirage,on_delete=models.CASCADE,default=None, null=True,) 
-    tirage_défini=models.BooleanField(default=False)
+    
     def __str__(self):
         return self.name
       
 class Winners(models.Model):
     nin = models.IntegerField(unique=True)
-    visite = models.BooleanField(default=False)
-    payement = models.BooleanField(default=False)
+    visite = models.BooleanField(default=None, null=True)
+    payement = models.BooleanField(default=None, null=True)
 
     def __str__(self):
         return str(self.nin)

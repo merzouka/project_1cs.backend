@@ -21,6 +21,8 @@ from django.utils import timezone
 import datetime
 from registration.serializers import WinnersSerializer
 
+from django.core.exceptions import ObjectDoesNotExist
+
 
 
 
@@ -99,7 +101,8 @@ def associate_tirage_with_baladiyas(request):
     tirage = Tirage.objects.create(
         type_tirage=type_tirage,
         nombre_de_place=nombre_de_place,
-        tranche_age=tranche_age 
+        tranche_age=tranche_age,
+        tirage_défini=True
     )
 
     
@@ -132,14 +135,16 @@ def fetch_winners(request):
                 baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
                 first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
         else:
-            
+            if user_instance.view_tirage:
+                return Response({'error': 'Vous avez consulté le tirage'}, status=404)
+
             user_city=user_instance.city
             wilaya_city=user_instance.province
             first_baladiya=Baladiya.objects.get(name=user_city, wilaya=wilaya_city)
             tirage_baladiya=first_baladiya.tirage_id
             baladiya_names = Baladiya.objects.filter(tirage_id=tirage_baladiya).values_list('name', flat=True)
 
-        if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_défini:
+        if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_fini:
             # removed winner field since it is not in data set, when algo executed it didn't set it
             # winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner).values_list('id', flat=True)).values_list('nin', flat=True)
             winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)).values_list('nin', flat=True)
@@ -149,6 +154,7 @@ def fetch_winners(request):
                 if winner.gender == 'M':
                     
                     winner_json = {
+                        'id':winner.id,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
@@ -157,6 +163,7 @@ def fetch_winners(request):
                     
                 else:
                      winner_json = {
+                        'id':winner.id,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
@@ -225,7 +232,9 @@ def fetch_winners(request):
                         if selected_condidat.user.gender == 'M':
                             selected_condidat.user.winner = True 
                             selected_condidat.user.winning_date= timezone.now()  
+                            selected_condidat.save()
                             selected_winners.append({
+                                'id':selected_condidat.user.id,
                                 'first_name': selected_condidat.user.first_name,
                                 'last_name': selected_condidat.user.last_name,
                                 'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -239,8 +248,10 @@ def fetch_winners(request):
                                 # Ensure the last selected winner is male
                                 last_male_condidat = random.choice([condidat for condidat in condidats2 if condidat.user.gender == 'M'])
                                 last_male_condidat.user.winner = True 
-                                last_male_condidat.user.winning_date = timezone.now()  
+                                last_male_condidat.user.winning_date = timezone.now() 
+                                last_male_condidat.user.save() 
                                 selected_winners.append({
+                                    'id':last_male_condidat.user.id,
                                     'first_name': last_male_condidat.user.first_name,
                                     'last_name': last_male_condidat.user.last_name,
                                     'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
@@ -251,7 +262,9 @@ def fetch_winners(request):
                         else:
                             selected_condidat.user.winner = True 
                             selected_condidat.user.winning_date= timezone.now()  
+                            selected_condidat.user.save()
                             selected_winners.append({
+                                'id':selected_condidat.user.id,
                                 'first_name': selected_condidat.user.first_name,
                                 'last_name': selected_condidat.user.last_name,
                                 'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -266,7 +279,9 @@ def fetch_winners(request):
                             if maahram_instance not in selected_winners:
                                 maahram_instance.winner = True 
                                 maahram_instance.winning_date= timezone.now()
+                                maahram_instance.save()
                                 selected_winners.append({
+                                    'id':maahram_instance.id,
                                     'first_name': maahram_instance.first_name,
                                     'last_name': maahram_instance.last_name,
                                     'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
@@ -284,6 +299,7 @@ def fetch_winners(request):
                             
                             
                             selected_waiting.append({
+                                'id':selected_condidat.user.id,
                                 'first_name': selected_condidat.user.first_name,
                                 'last_name': selected_condidat.user.last_name,
                                 'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -299,6 +315,7 @@ def fetch_winners(request):
                                 
                                 
                                 selected_waiting.append({
+                                    'id':last_male_condidat.user.id,
                                     'first_name': last_male_condidat.user.first_name,
                                     'last_name': last_male_condidat.user.last_name,
                                     'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
@@ -310,6 +327,7 @@ def fetch_winners(request):
                                 
                                 
                                 selected_waiting.append({
+                                    'id':selected_condidat.user.id,
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -325,6 +343,7 @@ def fetch_winners(request):
                                     
                                     
                                     selected_waiting.append({
+                                        'id':maahram_instance.id,
                                         'first_name': maahram_instance.first_name,
                                         'last_name': maahram_instance.last_name,
                                         'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
@@ -357,6 +376,7 @@ def fetch_winners(request):
                                 selected_condidat.user.winning_date= timezone.now()  
                                 selected_condidat.user.save() 
                                 selected_winners1.append({
+                                    'id':selected_condidat.user.id,
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -375,6 +395,7 @@ def fetch_winners(request):
                                     last_male_condidat.user.winning_date = timezone.now()  
                                     last_male_condidat.user.save()
                                     selected_winners1.append({
+                                        'id':last_male_condidat.user.id,
                                         'first_name': last_male_condidat.user.first_name,
                                         'last_name': last_male_condidat.user.last_name,
                                         'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
@@ -387,6 +408,7 @@ def fetch_winners(request):
                                 selected_condidat.user.winning_date= timezone.now() 
                                 selected_condidat.user.save()  
                                 selected_winners1.append({
+                                    'id':selected_condidat.user.id,
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -404,6 +426,7 @@ def fetch_winners(request):
                                     maahram_instance.winning_date= timezone.now()
                                     maahram_instance.save()
                                     selected_winners1.append({
+                                        'id':maahram_instance.id,
                                         'first_name': maahram_instance.first_name,
                                         'last_name': maahram_instance.last_name,
                                         'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
@@ -422,6 +445,7 @@ def fetch_winners(request):
                                 selected_condidat.user.winning_date= timezone.now() 
                                 selected_condidat.user.save()  
                                 selected_winners2.append({
+                                    'id':selected_condidat.user.id,
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -440,6 +464,7 @@ def fetch_winners(request):
                                     last_male_condidat.user.winning_date = timezone.now()  
                                     last_male_condidat.user.save()
                                     selected_winners2.append({
+                                        'id':last_male_condidat.user.id,
                                         'first_name': last_male_condidat.user.first_name,
                                         'last_name': last_male_condidat.user.last_name,
                                         'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
@@ -452,6 +477,7 @@ def fetch_winners(request):
                                 selected_condidat.user.winning_date= timezone.now() 
                                 selected_condidat.user.save()  
                                 selected_winners2.append({
+                                    'id': selected_condidat.user.id,
                                     'first_name': selected_condidat.user.first_name,
                                     'last_name': selected_condidat.user.last_name,
                                     'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
@@ -469,6 +495,7 @@ def fetch_winners(request):
                                         maahram_instance.winning_date= timezone.now()  
                                         maahram_instance.save()  
                                         selected_winners2.append({
+                                            'id':maahram_instance.id,
                                             'first_name': maahram_instance.first_name,
                                             'last_name': maahram_instance.last_name,
                                             'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
@@ -677,11 +704,20 @@ def check_tirage_definition(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def tirage_fini(request):
+def tirage_défini(request):
     try:
         baladiyat = Baladiya.objects.filter(id_utilisateur=request.user.id).first()
         if baladiyat and baladiyat.tirage and baladiyat.tirage.tirage_défini:
-            return JsonResponse({'message': 'tirage défini'})
+            tirage = baladiyat.tirage
+            tirage_data = {
+                'type_tirage': tirage.type_tirage,
+                'nombre_de_place': tirage.nombre_de_place,
+                'tranche_age': tirage.tranche_age,
+                'nombre_waiting': tirage.nombre_waiting,
+                'tirage_fini': tirage.tirage_fini
+            }
+            return JsonResponse({'message': 'tirage défini', 'tirage': tirage_data})
+
         else:
             return JsonResponse({'message': 'tirage non défini'})
 
@@ -692,36 +728,60 @@ def tirage_fini(request):
 #for visite medical...........................................
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@renderer_classes([JSONRenderer])
 def winners_by_baladiya(request):
     try:
         user_instance = request.user
-        
+
         baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
-        
+
         user_ids_in_city = user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)
         winners = Winners.objects.filter(nin__in=user_ids_in_city)
-        
+
         winners_data = []
         for winner in winners:
             winner_user = get_object_or_404(user, id=winner.nin)
             user_data = {
-                'id_user': winner_user.id,
                 'id_winner': winner.id,
                 'first_name': winner_user.first_name,
                 'last_name': winner_user.last_name,
                 'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+                'status': winner.visite,
             }
             winners_data.append(user_data)
-        
-        return JsonResponse(winners_data, status=200, safe=False)
-    
+
+        return Response({ 'winners': winners_data }, status=200)
+
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
 
 
 
 @api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
+def view_tirage(request):
+    try:
+        
+        user_instance = request.user
+
+        
+        user_instance.view_tirage = True
+
+        
+        user_instance.save()
+
+        return Response({'status': 'success', 'message': 'Vous avez consulté le tirage'}, status=200)
+    
+    except ObjectDoesNotExist:
+        return Response({'error': 'User not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['PATCH'])
+@renderer_classes([JSONRenderer])
 def visite_status(request):
 
     try:
@@ -729,28 +789,26 @@ def visite_status(request):
         id_winner = request.data.get('id_winner')
         status = request.data.get('status')
             
-        if not id_winner or not status:
-            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
+        if not id_winner:
+            return Response({'error': 'id_winner is required'}, status=400)
             
         try:
             winner = Winners.objects.get(id=id_winner)
         except Winners.DoesNotExist:
-            return JsonResponse({'error': 'Winner with the provided ID does not exist'}, status=404)
+            return Response({'error': 'Winner with the provided ID does not exist'}, status=404)
             
-        if status.lower() == "accepted":
-            winner.visite = True
-            winner.save()
-            return JsonResponse({'message': 'Winner visit status updated successfully'}, status=200)
-        else:
-            return JsonResponse({'message': 'Status is not "accepted", no action taken'}, status=200)
+        winner.visite = status
+        winner.save()
+        return Response({'message': 'Winner visit status updated successfully'}, status=200)
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
    
     
 #for payment.....................
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@renderer_classes([JSONRenderer])
 def winners_accepted(request):
     try:
         
@@ -773,45 +831,37 @@ def winners_accepted(request):
         for winner in winners:
             winner_user = get_object_or_404(user, id=winner.nin)
             user_data = {
-                'id_user': winner_user.id,
                 'id_winner': winner.id,
                 'first_name': winner_user.first_name,
                 'last_name': winner_user.last_name,
                 'personal_picture': winner_user.personal_picture.url if winner_user.personal_picture else None,
+                'status': winner.payement,
             }
             winners_data.append(user_data)
         
-        return JsonResponse(winners_data, status=200, safe=False)
+        return Response({ 'winners': winners_data }, status=200)
     
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
 
 
-@api_view(['POST'])
+@api_view(['PATCH'])
+@renderer_classes([JSONRenderer])
 def payment_status(request):
     try:
-        
+
         id_winner = request.data.get('id_winner')
         status = request.data.get('status')
-        
-        
-        if not id_winner or not status:
-            return JsonResponse({'error': 'Both id_winner and status are required'}, status=400)
-        
-        
+        if not id_winner:
+            return Response({'error': 'id_winner is required'}, status=400)
+
         winner = get_object_or_404(Winners, id=id_winner)
-        
-        
-        if status.lower() == "payé":
-            
-            winner.payement = True
-            winner.save()
-            return JsonResponse({'message': 'Winner payment status updated successfully'}, status=200)
-        else:
-            
-            return JsonResponse({'message': 'Status is not "payé", no action taken'}, status=200)
-    
+
+        winner.payement = status
+        winner.save()
+        return Response({'message': 'Winner payment status updated successfully'}, status=200)
+
     except Exception as e:
-       
-        return JsonResponse({'error': str(e)}, status=500)
+
+        return Response({'error': str(e)}, status=500)
 
