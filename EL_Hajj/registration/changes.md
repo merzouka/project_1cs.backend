@@ -8,3 +8,4 @@
 - [not changed] use more descriptive names for: urls, views
 - changed return of winners, for consistency and ease of consumption
 - changed id_winner and status check as status can be false or null
+- fixed user retrieval to take province into consideration

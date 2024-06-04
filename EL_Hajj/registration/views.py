@@ -115,7 +115,39 @@ def associate_tirage_with_baladiyas(request):
     return Response({'message': 'Tirage information associated with Baladiyas successfully'}, status=201)
 
 
+def get_male_winner_info(winner: user):
+    return {
+        'id':winner.id,
+        'city': winner.city,
+        'first_name': winner.first_name,
+        'last_name': winner.last_name,
+        'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
+        'gender': winner.gender
+    }
 
+def get_female_winner_info(winner: user):
+    mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
+    mahram_json = {
+        'id':mahram.id,
+        'city': winner.city,
+        'first_name': mahram.first_name,
+        'last_name': mahram.last_name,
+        'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
+        'gender': mahram.gender
+    }
+    winner_json = {
+        'id':winner.id,
+        'city': winner.city,
+        'first_name': winner.first_name,
+        'last_name': winner.last_name,
+        'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
+        'gender': winner.gender,
+        'maahram_id': mahram.id
+    }
+    return [
+        winner_json,
+        mahram_json
+    ]
 
 
 @api_view(['GET'])
@@ -124,67 +156,36 @@ def associate_tirage_with_baladiyas(request):
 def fetch_winners(request):
     try:
         user_instance = request.user
-        #baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
-        #baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
-        #first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
-        
-        #if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_défini:
         role_user=user_instance.role
+        baladiya_group = []
         if role_user == 'responsable tirage':
-                baladiyas_in_group = Baladiya.objects.filter(id_utilisateur=user_instance)
-                baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
-                first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
+            baladiya_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+            first_baladiya = baladiya_group[0]
         else:
-            # if user_instance.view_tirage:
-            #     return Response({'error': 'Vous avez consulté le tirage'}, status=404)
-
             user_city=user_instance.city
             wilaya_city=user_instance.province
             first_baladiya=Baladiya.objects.get(name=user_city, wilaya=wilaya_city)
             tirage_baladiya=first_baladiya.tirage_id
-            baladiya_names = Baladiya.objects.filter(tirage_id=tirage_baladiya).values_list('name', flat=True)
+            baladiya_group = Baladiya.objects.filter(tirage_id=tirage_baladiya)
 
         if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_fini:
-            # removed winner field since it is not in data set, when algo executed it didn't set it
-            # winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner).values_list('id', flat=True)).values_list('nin', flat=True)
-            winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)).values_list('nin', flat=True)
-            print(winner_user_ids)
+            winner_user_ids = []
+            for baladiya in baladiya_group:
+                winner_user_ids.extend(
+                    Winners.objects
+                    .filter(nin__in=user.objects.filter(city__iexact=baladiya.name)
+                    .filter(province=baladiya.wilaya).values_list('id', flat=True))
+                    .values_list('nin', flat=True)
+                )
             selected_winners = []
             for winner_id in winner_user_ids:
                 winner = user.objects.get(id=winner_id)
                 print(winner.city)
                 if winner.gender == 'M':
-                    winner_json = {
-                        'id':winner.id,
-                        'city': winner.city,
-                        'first_name': winner.first_name,
-                        'last_name': winner.last_name,
-                        'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
-                        'gender': winner.gender
-                    }
-                    selected_winners.append(winner_json)
+                    selected_winners.append(get_male_winner_info(winner))
 
                 else:
-                    mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
-                    mahram_json = {
-                        'id':mahram.id,
-                        'city': winner.city,
-                        'first_name': mahram.first_name,
-                        'last_name': mahram.last_name,
-                        'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
-                        'gender': mahram.gender
-                    }
-                    winner_json = {
-                        'id':winner.id,
-                        'city': winner.city,
-                        'first_name': winner.first_name,
-                        'last_name': winner.last_name,
-                        'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
-                        'gender': winner.gender,
-                        'maahram_id': mahram.id
-                    }
-                    selected_winners.append(winner_json)
-                    selected_winners.append(mahram_json)
+                    selected_winners.extend(get_female_winner_info(winner))
             return Response({ "winners": selected_winners }, 200)
 
 
@@ -193,86 +194,73 @@ def fetch_winners(request):
 
 
         else:       
+            condidats = []
+            for baladiya in baladiya_group:
+                haajs_in_city = Haaj.objects.filter(user__city=baladiya.name).filter(user__province=baladiya.wilaya)
+                condidats.extend(haajs_in_city)
+            condidats2 =[]
 
-                condidats = []
+            for haaj in condidats:
+                times_to_add = haaj.user.nombreInscription
+                condidats2.extend([haaj] * times_to_add)
 
-                for baladiya_name in baladiya_names:
-                    haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
-                    condidats.extend(haajs_in_city)
-                
-                condidats2 =[]
-            
+            condidats2_over_60 = []
+            condidats2_under_60 = []
 
-
-                for haaj in condidats:
-            
-                    times_to_add = haaj.user.nombreInscription
-            
-                    condidats2.extend([haaj] * times_to_add)
-
-                condidats2_over_60 = []
-                condidats2_under_60 = []
-
-        
-                for haaj in condidats2:
-            
-                
-                  user_age_days = (datetime.date.today() - haaj.user.dateOfBirth).days
-                  user_age_years = user_age_days / 365.2425 
-            
-            
+            for haaj in condidats2:
+                user_age_days = (datetime.date.today() - haaj.user.dateOfBirth).days
+                user_age_years = user_age_days / 365.2425 
                 if user_age_years > 60:
-                
                     condidats2_over_60.append(haaj)
                 else:
-                
                     condidats2_under_60.append(haaj)
 
-                id_tirage = first_baladiya.tirage.id
-                number_of_winners_needed = Tirage.objects.get(id=id_tirage).nombre_de_place
-                type_de_tirage = Tirage.objects.get(id=id_tirage).type_tirage
-                tirage = Tirage.objects.get(id=id_tirage)
-                tirage.tirage_défini = True
-                tirage.save()
+            id_tirage = first_baladiya.tirage.id
+            tirage = Tirage.objects.get(id=id_tirage)
+            number_of_winners_needed = tirage.nombre_de_place
+            type_de_tirage = tirage.type_tirage
+            tirage.tirage_défini = True
+            tirage.save()
 
-                number_of_waiting_needed=Tirage.objects.get(id=id_tirage).nombre_waiting
+            number_of_waiting_needed=Tirage.objects.get(id=id_tirage).nombre_waiting
             
-                selected_winners = []
-                selected_waiting=[]
+            selected_winners = []
+            selected_waiting=[]
 
-                if type_de_tirage == 1:
-                    while len(selected_winners) < number_of_winners_needed:
-                        selected_condidat = random.choice(condidats2)
-                        if selected_condidat.user.gender == 'M':
-                            selected_condidat.user.winner = True 
-                            selected_condidat.user.winning_date= timezone.now()  
-                            selected_condidat.save()
+            if type_de_tirage == 1:
+                while len(selected_winners) < number_of_winners_needed:
+                    selected_condidat = random.choice(condidats2)
+                    if selected_condidat.user.gender == 'M':
+                        selected_condidat.user.winner = True 
+                        selected_condidat.user.winning_date= timezone.now()  
+                        selected_condidat.save()
+                        selected_winners.append({
+                            'id':selected_condidat.user.id,
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
+                        })
+                        #condidats2.remove(selected_condidat)
+                        condidats2 = list(filter((selected_condidat).__ne__, condidats2))
+                        Winners.objects.create(nin=selected_condidat.user.id)
+                    elif selected_condidat.user.gender == 'F':
+                        if len(selected_winners) == number_of_winners_needed - 1:
+                            # Ensure the last selected winner is male
+                            last_male_condidat = random.choice([condidat for condidat in condidats2 if condidat.user.gender == 'M'])
+                            last_male_condidat.user.winner = True 
+                            last_male_condidat.user.winning_date = timezone.now() 
+                            last_male_condidat.user.save() 
                             selected_winners.append({
-                                'id':selected_condidat.user.id,
-                                'first_name': selected_condidat.user.first_name,
-                                'last_name': selected_condidat.user.last_name,
-                                'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                'gender':selected_condidat.user.gender
+                                'id':last_male_condidat.user.id,
+                                'first_name': last_male_condidat.user.first_name,
+                                'last_name': last_male_condidat.user.last_name,
+                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                'gender':last_male_condidat.user.gender
                             })
-                            #condidats2.remove(selected_condidat)
-                            condidats2 = list(filter((selected_condidat).__ne__, condidats2))
-                            Winners.objects.create(nin=selected_condidat.user.id)
-                        elif selected_condidat.user.gender == 'F':
-                         if len(selected_winners) == number_of_winners_needed - 1:
-                                # Ensure the last selected winner is male
-                                last_male_condidat = random.choice([condidat for condidat in condidats2 if condidat.user.gender == 'M'])
-                                last_male_condidat.user.winner = True 
-                                last_male_condidat.user.winning_date = timezone.now() 
-                                last_male_condidat.user.save() 
-                                selected_winners.append({
-                                    'id':last_male_condidat.user.id,
-                                    'first_name': last_male_condidat.user.first_name,
-                                    'last_name': last_male_condidat.user.last_name,
-                                    'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
-                                    'gender':last_male_condidat.user.gender
-                                })
-                                condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
-                                Winners.objects.create(nin=last_male_condidat.user.id)
+                            condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
+                            Winners.objects.create(nin=last_male_condidat.user.id)
+
                         else:
                             selected_condidat.user.winner = True 
                             selected_condidat.user.winning_date= timezone.now()  
@@ -303,13 +291,39 @@ def fetch_winners(request):
                                 })
                                 Winners.objects.create(nin=maahram_instance.id)
                                 if maahram_instance in condidats2:
-                                        condidats2 = list(filter((maahram_instance).__ne__, condidats2))
+                                    condidats2 = list(filter((maahram_instance).__ne__, condidats2))
 
 
                 #witing list code................
-                    while len(selected_waiting) < number_of_waiting_needed:
-                        selected_condidat = random.choice(condidats2)
-                        if selected_condidat.user.gender == 'M':
+                while len(selected_waiting) < number_of_waiting_needed:
+                    selected_condidat = random.choice(condidats2)
+                    if selected_condidat.user.gender == 'M':
+                        selected_waiting.append({
+                            'id':selected_condidat.user.id,
+                            'first_name': selected_condidat.user.first_name,
+                            'last_name': selected_condidat.user.last_name,
+                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                            'gender':selected_condidat.user.gender
+                        })
+                        
+                        condidats2 = list(filter((selected_condidat).__ne__, condidats2))
+                        WaitingList.objects.create(nin=selected_condidat.user.id)
+                    elif selected_condidat.user.gender == 'F':
+                        if len(selected_waiting) == number_of_waiting_needed - 1:
+                            
+                            last_male_condidat = random.choice([condidat for condidat in condidats2 if condidat.user.gender == 'M'])
+                            
+                            
+                            selected_waiting.append({
+                                'id':last_male_condidat.user.id,
+                                'first_name': last_male_condidat.user.first_name,
+                                'last_name': last_male_condidat.user.last_name,
+                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                'gender':last_male_condidat.user.gender
+                            })
+                            condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
+                            WaitingList.objects.create(nin=last_male_condidat.user.id)
+                        else:
                             
                             
                             selected_waiting.append({
@@ -317,129 +331,170 @@ def fetch_winners(request):
                                 'first_name': selected_condidat.user.first_name,
                                 'last_name': selected_condidat.user.last_name,
                                 'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                'gender':selected_condidat.user.gender
+                                'gender':selected_condidat.user.gender,
+                                'maahram_id':selected_condidat.maahram_id
                             })
                             
                             condidats2 = list(filter((selected_condidat).__ne__, condidats2))
                             WaitingList.objects.create(nin=selected_condidat.user.id)
-                        elif selected_condidat.user.gender == 'F':
-                            if len(selected_waiting) == number_of_waiting_needed - 1:
-                                
-                                last_male_condidat = random.choice([condidat for condidat in condidats2 if condidat.user.gender == 'M'])
+                            
+                            maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                            if maahram_instance not in selected_waiting:
                                 
                                 
                                 selected_waiting.append({
+                                    'id':maahram_instance.id,
+                                    'first_name': maahram_instance.first_name,
+                                    'last_name': maahram_instance.last_name,
+                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                    'gender':maahram_instance.gender
+                                })
+                                WaitingList.objects.create(nin=maahram_instance.id)
+                                if maahram_instance in condidats2:
+                                    condidats2 = list(filter((maahram_instance).__ne__, condidats2))
+                                    
+
+            elif type_de_tirage == 2:
+                selected_winners1 = []
+                selected_winners2 = []
+                selected_waiting1=[]
+                selected_waiting2=[]
+                tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
+                nombre_old = int((tranche_age * number_of_winners_needed) / 100)
+                nombre_new = number_of_winners_needed-nombre_old
+
+
+                #pour waiting list
+                nombre_old1 = int((tranche_age * number_of_waiting_needed) / 100)
+                nombre_new1 = number_of_waiting_needed-nombre_old1
+
+                if condidats2_over_60:
+                    while len(selected_winners1) < nombre_old:
+                        selected_condidat = random.choice(condidats2_over_60)
+                        if selected_condidat.user.gender == 'M':
+                            selected_condidat.user.winner = True 
+                            selected_condidat.user.winning_date= timezone.now()  
+                            selected_condidat.user.save() 
+                            selected_winners1.append({
+                                'id':selected_condidat.user.id,
+                                'first_name': selected_condidat.user.first_name,
+                                'last_name': selected_condidat.user.last_name,
+                                'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                'gender':selected_condidat.user.gender
+                            })
+                            # condidats2_over_60.remove(selected_condidat)
+                            condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                            Winners.objects.create(nin=selected_condidat.user.id)
+                            
+                        elif selected_condidat.user.gender == 'F':
+                            # Check if the current selection is the last one
+                         if len(selected_winners1) == nombre_old - 1:
+                                # Ensure the last selected winner is male
+                                last_male_condidat = random.choice([condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M'])
+                                last_male_condidat.user.winner = True 
+                                last_male_condidat.user.winning_date = timezone.now()  
+                                last_male_condidat.user.save()
+                                selected_winners1.append({
                                     'id':last_male_condidat.user.id,
                                     'first_name': last_male_condidat.user.first_name,
                                     'last_name': last_male_condidat.user.last_name,
                                     'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
                                     'gender':last_male_condidat.user.gender
                                 })
-                                condidats2 = list(filter((last_male_condidat).__ne__, condidats2))
-                                WaitingList.objects.create(nin=last_male_condidat.user.id)
-                            else:
-                                
-                                
-                                selected_waiting.append({
-                                    'id':selected_condidat.user.id,
-                                    'first_name': selected_condidat.user.first_name,
-                                    'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender,
-                                    'maahram_id':selected_condidat.maahram_id
-                                })
-                                
-                                condidats2 = list(filter((selected_condidat).__ne__, condidats2))
-                                WaitingList.objects.create(nin=selected_condidat.user.id)
-                                
-                                maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                                if maahram_instance not in selected_waiting:
-                                    
-                                    
-                                    selected_waiting.append({
-                                        'id':maahram_instance.id,
-                                        'first_name': maahram_instance.first_name,
-                                        'last_name': maahram_instance.last_name,
-                                        'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
-                                        'gender':maahram_instance.gender
-                                    })
-                                    WaitingList.objects.create(nin=maahram_instance.id)
-                                    if maahram_instance in condidats2:
-                                        condidats2 = list(filter((maahram_instance).__ne__, condidats2))
-                                        
-
-                elif type_de_tirage == 2:
-                    selected_winners1 = []
-                    selected_winners2 = []
-                    selected_waiting1=[]
-                    selected_waiting2=[]
-                    tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
-                    nombre_old = int((tranche_age * number_of_winners_needed) / 100)
-                    nombre_new = number_of_winners_needed-nombre_old
-
-
-                    #pour waiting list
-                    nombre_old1 = int((tranche_age * number_of_waiting_needed) / 100)
-                    nombre_new1 = number_of_waiting_needed-nombre_old1
-
-                    if condidats2_over_60:
-                        while len(selected_winners1) < nombre_old:
-                            selected_condidat = random.choice(condidats2_over_60)
-                            if selected_condidat.user.gender == 'M':
-                                selected_condidat.user.winner = True 
-                                selected_condidat.user.winning_date= timezone.now()  
-                                selected_condidat.user.save() 
+                                condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
+                                Winners.objects.create(nin=last_male_condidat.user.id)
+                        else:
+                            selected_condidat.user.winner = True
+                            selected_condidat.user.winning_date= timezone.now() 
+                            selected_condidat.user.save()  
+                            selected_winners1.append({
+                                'id':selected_condidat.user.id,
+                                'first_name': selected_condidat.user.first_name,
+                                'last_name': selected_condidat.user.last_name,
+                                'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                'gender':selected_condidat.user.gender,
+                                'maahram_id':selected_condidat.maahram_id
+                            })
+                            #condidats2_over_60.remove(selected_condidat)
+                            condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                            Winners.objects.create(nin=selected_condidat.user.id)
+                            
+                            maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                            if maahram_instance not in selected_winners1:
+                                #condidats.remove(maahram_instance)
+                                maahram_instance.winner = True 
+                                maahram_instance.winning_date= timezone.now()
+                                maahram_instance.save()
                                 selected_winners1.append({
-                                    'id':selected_condidat.user.id,
-                                    'first_name': selected_condidat.user.first_name,
-                                    'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender
+                                    'id':maahram_instance.id,
+                                    'first_name': maahram_instance.first_name,
+                                    'last_name': maahram_instance.last_name,
+                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
+                                    'gender':maahram_instance.gender
                                 })
-                                # condidats2_over_60.remove(selected_condidat)
-                                condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
-                                Winners.objects.create(nin=selected_condidat.user.id)
-                                
-                            elif selected_condidat.user.gender == 'F':
-                                # Check if the current selection is the last one
-                             if len(selected_winners1) == nombre_old - 1:
-                                    # Ensure the last selected winner is male
-                                    last_male_condidat = random.choice([condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M'])
-                                    last_male_condidat.user.winner = True 
-                                    last_male_condidat.user.winning_date = timezone.now()  
-                                    last_male_condidat.user.save()
-                                    selected_winners1.append({
-                                        'id':last_male_condidat.user.id,
-                                        'first_name': last_male_condidat.user.first_name,
-                                        'last_name': last_male_condidat.user.last_name,
-                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
-                                        'gender':last_male_condidat.user.gender
-                                    })
-                                    condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
-                                    Winners.objects.create(nin=last_male_condidat.user.id)
-                            else:
-                                selected_condidat.user.winner = True
-                                selected_condidat.user.winning_date= timezone.now() 
-                                selected_condidat.user.save()  
-                                selected_winners1.append({
-                                    'id':selected_condidat.user.id,
-                                    'first_name': selected_condidat.user.first_name,
-                                    'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender,
-                                    'maahram_id':selected_condidat.maahram_id
+                                Winners.objects.create(nin=maahram_instance.id)
+                                if condidats2_over_60:
+                                    if maahram_instance in condidats2_under_60:
+                                       condidats2_over_60 = list(filter((maahram_instance).__ne__, condidats2_over_60))
+
+                if condidats2_under_60:                           
+                    while len(selected_winners2) < nombre_new:
+                        selected_condidat = random.choice(condidats2_under_60)
+                        if selected_condidat.user.gender == 'M':
+                            selected_condidat.user.winner = True
+                            selected_condidat.user.winning_date= timezone.now() 
+                            selected_condidat.user.save()  
+                            selected_winners2.append({
+                                'id':selected_condidat.user.id,
+                                'first_name': selected_condidat.user.first_name,
+                                'last_name': selected_condidat.user.last_name,
+                                'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                'gender':selected_condidat.user.gender
+                            })
+                            #condidats2_under_60.remove(selected_condidat)
+                            condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                            Winners.objects.create(nin=selected_condidat.user.id)
+                            
+                        elif selected_condidat.user.gender == 'F':
+                        # Check if the current selection is the last one
+                         if len(selected_winners2) == nombre_new - 1:
+                                # Ensure the last selected winner is male
+                                last_male_condidat = random.choice([condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M'])
+                                last_male_condidat.user.winner = True 
+                                last_male_condidat.user.winning_date = timezone.now()  
+                                last_male_condidat.user.save()
+                                selected_winners2.append({
+                                    'id':last_male_condidat.user.id,
+                                    'first_name': last_male_condidat.user.first_name,
+                                    'last_name': last_male_condidat.user.last_name,
+                                    'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                    'gender':last_male_condidat.user.gender
                                 })
-                                #condidats2_over_60.remove(selected_condidat)
-                                condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
-                                Winners.objects.create(nin=selected_condidat.user.id)
-                                
-                                maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                                if maahram_instance not in selected_winners1:
-                                    #condidats.remove(maahram_instance)
-                                    maahram_instance.winner = True 
-                                    maahram_instance.winning_date= timezone.now()
-                                    maahram_instance.save()
-                                    selected_winners1.append({
+                                condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
+                                Winners.objects.create(nin=last_male_condidat.user.id)
+                        else:
+                            selected_condidat.user.winner = True  
+                            selected_condidat.user.winning_date= timezone.now() 
+                            selected_condidat.user.save()  
+                            selected_winners2.append({
+                                'id': selected_condidat.user.id,
+                                'first_name': selected_condidat.user.first_name,
+                                'last_name': selected_condidat.user.last_name,
+                                'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                'gender':selected_condidat.user.gender,
+                                'maahram_id':selected_condidat.maahram_id
+                            })
+                            #condidats2_under_60.remove(selected_condidat)
+                            condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                            Winners.objects.create(nin=selected_condidat.user.id)
+
+                            maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                            if (maahram_instance not in selected_winners1) and  (maahram_instance not in selected_winners2) :
+                            #condidats.remove(maahram_instance)
+                                    maahram_instance.winner = True
+                                    maahram_instance.winning_date= timezone.now()  
+                                    maahram_instance.save()  
+                                    selected_winners2.append({
                                         'id':maahram_instance.id,
                                         'first_name': maahram_instance.first_name,
                                         'last_name': maahram_instance.last_name,
@@ -447,222 +502,153 @@ def fetch_winners(request):
                                         'gender':maahram_instance.gender
                                     })
                                     Winners.objects.create(nin=maahram_instance.id)
-                                    if condidats2_over_60:
+                                    if condidats2_under_60:
                                         if maahram_instance in condidats2_under_60:
-                                           condidats2_over_60 = list(filter((maahram_instance).__ne__, condidats2_over_60))
+                                            condidats2_under_60 = list(filter((maahram_instance).__ne__, condidats2_under_60))
 
-                    if condidats2_under_60:                           
-                        while len(selected_winners2) < nombre_new:
-                            selected_condidat = random.choice(condidats2_under_60)
-                            if selected_condidat.user.gender == 'M':
-                                selected_condidat.user.winner = True
-                                selected_condidat.user.winning_date= timezone.now() 
-                                selected_condidat.user.save()  
-                                selected_winners2.append({
-                                    'id':selected_condidat.user.id,
-                                    'first_name': selected_condidat.user.first_name,
-                                    'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender
-                                })
-                                #condidats2_under_60.remove(selected_condidat)
-                                condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
-                                Winners.objects.create(nin=selected_condidat.user.id)
-                                
-                            elif selected_condidat.user.gender == 'F':
-                            # Check if the current selection is the last one
-                             if len(selected_winners2) == nombre_new - 1:
-                                    # Ensure the last selected winner is male
-                                    last_male_condidat = random.choice([condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M'])
-                                    last_male_condidat.user.winner = True 
-                                    last_male_condidat.user.winning_date = timezone.now()  
-                                    last_male_condidat.user.save()
-                                    selected_winners2.append({
-                                        'id':last_male_condidat.user.id,
-                                        'first_name': last_male_condidat.user.first_name,
-                                        'last_name': last_male_condidat.user.last_name,
-                                        'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
-                                        'gender':last_male_condidat.user.gender
+
+
+
+
+                    #tirage  de waiting list........................;
+                if condidats2_over_60:
+                            while len(selected_waiting1) < nombre_old1:
+                                selected_condidat = random.choice(condidats2_over_60)
+                                if selected_condidat.user.gender == 'M':
+                                    
+                                    
+                                    
+                                    selected_waiting1.append({
+                                        'first_name': selected_condidat.user.first_name,
+                                        'last_name': selected_condidat.user.last_name,
+                                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                        'gender':selected_condidat.user.gender
                                     })
-                                    condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
-                                    Winners.objects.create(nin=last_male_condidat.user.id)
-                            else:
-                                selected_condidat.user.winner = True  
-                                selected_condidat.user.winning_date= timezone.now() 
-                                selected_condidat.user.save()  
-                                selected_winners2.append({
-                                    'id': selected_condidat.user.id,
-                                    'first_name': selected_condidat.user.first_name,
-                                    'last_name': selected_condidat.user.last_name,
-                                    'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                    'gender':selected_condidat.user.gender,
-                                    'maahram_id':selected_condidat.maahram_id
-                                })
-                                #condidats2_under_60.remove(selected_condidat)
-                                condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
-                                Winners.objects.create(nin=selected_condidat.user.id)
-
-                                maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                                if (maahram_instance not in selected_winners1) and  (maahram_instance not in selected_winners2) :
-                                #condidats.remove(maahram_instance)
-                                        maahram_instance.winner = True
-                                        maahram_instance.winning_date= timezone.now()  
-                                        maahram_instance.save()  
-                                        selected_winners2.append({
-                                            'id':maahram_instance.id,
+                                    
+                                    condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                                    WaitingList.objects.create(nin=selected_condidat.user.id)
+                                    
+                                elif selected_condidat.user.gender == 'F':
+                                    
+                                 if len(selected_waiting1) == nombre_old1 - 1:
+                                        # Ensure the last selected winner is male
+                                        last_male_condidat = random.choice([condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M'])
+                                        
+                                        
+                                        
+                                        selected_waiting1.append({
+                                            'first_name': last_male_condidat.user.first_name,
+                                            'last_name': last_male_condidat.user.last_name,
+                                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                            'gender':last_male_condidat.user.gender
+                                        })
+                                        condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
+                                        WaitingList.objects.create(nin=last_male_condidat.user.id)
+                                else:
+                                    
+                                    
+                                    
+                                    selected_waiting1.append({
+                                        'first_name': selected_condidat.user.first_name,
+                                        'last_name': selected_condidat.user.last_name,
+                                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                        'gender':selected_condidat.user.gender,
+                                        'maahram_id':selected_condidat.maahram_id
+                                    })
+                                    
+                                    condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
+                                    WaitingList.objects.create(nin=selected_condidat.user.id)
+                                    
+                                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                                    if maahram_instance not in selected_winners1:
+                                        
+                                        
+                                        
+                                        
+                                        selected_waiting1.append({
                                             'first_name': maahram_instance.first_name,
                                             'last_name': maahram_instance.last_name,
                                             'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
                                             'gender':maahram_instance.gender
                                         })
-                                        Winners.objects.create(nin=maahram_instance.id)
-                                        if condidats2_under_60:
+                                        WaitingList.objects.create(nin=maahram_instance.id)
+                                        if condidats2_over_60:
                                             if maahram_instance in condidats2_under_60:
-                                                condidats2_under_60 = list(filter((maahram_instance).__ne__, condidats2_under_60))
+                                                condidats2_over_60 = list(filter((maahram_instance).__ne__, condidats2_over_60))
 
-
-
-
-
-                        #tirage  de waiting list........................;
-                    if condidats2_over_60:
-                                while len(selected_waiting1) < nombre_old1:
-                                    selected_condidat = random.choice(condidats2_over_60)
-                                    if selected_condidat.user.gender == 'M':
+                if condidats2_under_60:                           
+                            while len(selected_waiting2) < nombre_new1:
+                                selected_condidat = random.choice(condidats2_under_60)
+                                if selected_condidat.user.gender == 'M':
+                                    
+                                    
+                                    
+                                    selected_waiting2.append({
+                                        'first_name': selected_condidat.user.first_name,
+                                        'last_name': selected_condidat.user.last_name,
+                                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                        'gender':selected_condidat.user.gender
+                                    })
+                                    
+                                    condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                                    WaitingList.objects.create(nin=selected_condidat.user.id)
+                                    
+                                elif selected_condidat.user.gender == 'F':
+                                
+                                 if len(selected_waiting2) == nombre_new1 - 1:
+                                        
+                                        last_male_condidat = random.choice([condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M'])
                                         
                                         
                                         
-                                        selected_waiting1.append({
-                                            'first_name': selected_condidat.user.first_name,
-                                            'last_name': selected_condidat.user.last_name,
-                                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                            'gender':selected_condidat.user.gender
+                                        selected_waiting2.append({
+                                            'first_name': last_male_condidat.user.first_name,
+                                            'last_name': last_male_condidat.user.last_name,
+                                            'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
+                                            'gender':last_male_condidat.user.gender
                                         })
-                                        
-                                        condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
-                                        WaitingList.objects.create(nin=selected_condidat.user.id)
-                                        
-                                    elif selected_condidat.user.gender == 'F':
-                                        
-                                     if len(selected_waiting1) == nombre_old1 - 1:
-                                            # Ensure the last selected winner is male
-                                            last_male_condidat = random.choice([condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M'])
+                                        condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
+                                        WaitingList.objects.create(nin=last_male_condidat.user.id)
+                                else:
+                                    
+                                    
+                                    
+                                    selected_waiting2.append({
+                                        'first_name': selected_condidat.user.first_name,
+                                        'last_name': selected_condidat.user.last_name,
+                                        'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
+                                        'gender':selected_condidat.user.gender,
+                                        'maahram_id':selected_condidat.maahram_id
+                                    })
+                                    
+                                    condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
+                                    WaitingList.objects.create(nin=selected_condidat.user.id)
+
+                                    maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
+                                    if (maahram_instance not in selected_waiting1) and  (maahram_instance not in selected_waiting2) :
+                                    
                                             
                                             
                                             
-                                            selected_waiting1.append({
-                                                'first_name': last_male_condidat.user.first_name,
-                                                'last_name': last_male_condidat.user.last_name,
-                                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
-                                                'gender':last_male_condidat.user.gender
-                                            })
-                                            condidats2_over_60 = list(filter((last_male_condidat).__ne__, condidats2_over_60))
-                                            WaitingList.objects.create(nin=last_male_condidat.user.id)
-                                    else:
-                                        
-                                        
-                                        
-                                        selected_waiting1.append({
-                                            'first_name': selected_condidat.user.first_name,
-                                            'last_name': selected_condidat.user.last_name,
-                                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                            'gender':selected_condidat.user.gender,
-                                            'maahram_id':selected_condidat.maahram_id
-                                        })
-                                        
-                                        condidats2_over_60 = list(filter((selected_condidat).__ne__, condidats2_over_60))
-                                        WaitingList.objects.create(nin=selected_condidat.user.id)
-                                        
-                                        maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                                        if maahram_instance not in selected_winners1:
-                                            
-                                            
-                                            
-                                            
-                                            selected_waiting1.append({
+                                            selected_waiting2.append({
                                                 'first_name': maahram_instance.first_name,
                                                 'last_name': maahram_instance.last_name,
                                                 'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
                                                 'gender':maahram_instance.gender
                                             })
                                             WaitingList.objects.create(nin=maahram_instance.id)
-                                            if condidats2_over_60:
+                                            if condidats2_under_60:
                                                 if maahram_instance in condidats2_under_60:
-                                                    condidats2_over_60 = list(filter((maahram_instance).__ne__, condidats2_over_60))
+                                                    condidats2_under_60 = list(filter((maahram_instance).__ne__, condidats2_under_60))
 
-                    if condidats2_under_60:                           
-                                while len(selected_waiting2) < nombre_new1:
-                                    selected_condidat = random.choice(condidats2_under_60)
-                                    if selected_condidat.user.gender == 'M':
-                                        
-                                        
-                                        
-                                        selected_waiting2.append({
-                                            'first_name': selected_condidat.user.first_name,
-                                            'last_name': selected_condidat.user.last_name,
-                                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                            'gender':selected_condidat.user.gender
-                                        })
-                                        
-                                        condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
-                                        WaitingList.objects.create(nin=selected_condidat.user.id)
-                                        
-                                    elif selected_condidat.user.gender == 'F':
-                                    
-                                     if len(selected_waiting2) == nombre_new1 - 1:
-                                            
-                                            last_male_condidat = random.choice([condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M'])
-                                            
-                                            
-                                            
-                                            selected_waiting2.append({
-                                                'first_name': last_male_condidat.user.first_name,
-                                                'last_name': last_male_condidat.user.last_name,
-                                                'personal_picture': last_male_condidat.personal_picture.url if last_male_condidat.personal_picture else None,
-                                                'gender':last_male_condidat.user.gender
-                                            })
-                                            condidats2_under_60 = list(filter((last_male_condidat).__ne__, condidats2_under_60))
-                                            WaitingList.objects.create(nin=last_male_condidat.user.id)
-                                    else:
-                                        
-                                        
-                                        
-                                        selected_waiting2.append({
-                                            'first_name': selected_condidat.user.first_name,
-                                            'last_name': selected_condidat.user.last_name,
-                                            'personal_picture': selected_condidat.personal_picture.url if selected_condidat.personal_picture else None,
-                                            'gender':selected_condidat.user.gender,
-                                            'maahram_id':selected_condidat.maahram_id
-                                        })
-                                        
-                                        condidats2_under_60 = list(filter((selected_condidat).__ne__, condidats2_under_60))
-                                        WaitingList.objects.create(nin=selected_condidat.user.id)
+            if type_de_tirage == 1:
+                selected_winners = selected_winners
+                selected_waiting = selected_waiting
+            else:
+                selected_winners = selected_winners1 + selected_winners2
+                selected_waiting = selected_waiting1 + selected_waiting2
 
-                                        maahram_instance = user.objects.get(id=selected_condidat.maahram_id)
-                                        if (maahram_instance not in selected_waiting1) and  (maahram_instance not in selected_waiting2) :
-                                        
-                                                
-                                                
-                                                
-                                                selected_waiting2.append({
-                                                    'first_name': maahram_instance.first_name,
-                                                    'last_name': maahram_instance.last_name,
-                                                    'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
-                                                    'gender':maahram_instance.gender
-                                                })
-                                                WaitingList.objects.create(nin=maahram_instance.id)
-                                                if condidats2_under_60:
-                                                    if maahram_instance in condidats2_under_60:
-                                                        condidats2_under_60 = list(filter((maahram_instance).__ne__, condidats2_under_60))
-
-                if type_de_tirage == 1:
-                    selected_winners = selected_winners
-                    selected_waiting = selected_waiting
-                else:
-                    selected_winners = selected_winners1 + selected_winners2
-                    selected_waiting = selected_waiting1 + selected_waiting2
-
-                return JsonResponse({'winners': selected_winners}, status=200)
+            return JsonResponse({'winners': selected_winners}, status=200)
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -672,18 +658,20 @@ def fetch_winners(request):
 def participants_tirage(request):
     try:
         user_instance = request.user
-        user_city = user_instance.city
-        baladiya_instance = get_object_or_404(Baladiya, name=user_city)
-        baladiya_tirage_id = baladiya_instance.tirage_id
-        baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
-        baladiya_names = [baladiya.name for baladiya in baladiyat_in_tirage]
+        baladiyat_in_tirage = []
+        if user_instance.role == 'responsable tirage':
+            baladiyat_in_tirage = Baladiya.objects.filter(id_utilisateur=user_instance)
+        else:
+            baladiya_instance = get_object_or_404(Baladiya, name=user_instance.city, wilaya=user_instance.province)
+            baladiya_tirage_id = baladiya_instance.tirage_id
+            baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
         serialized_data = []
 
-        for baladiya_name in baladiya_names:
-            haajs_in_city = Haaj.objects.filter(user__city=baladiya_name)
+        for baladiya in baladiyat_in_tirage:
+            haajs_in_city = Haaj.objects.filter(user__city__iexact=baladiya.name).filter(user__province=baladiya.wilaya)
             for haaj in haajs_in_city:
                 haaj_data = {
-                    'NIN': haaj.NIN,
+                    'city': haaj.user.city,
                     'first_name': haaj.user.first_name,
                     'last_name': haaj.user.last_name,
                     'personal_picture': haaj.user.personal_picture.url if haaj.user.personal_picture else None,
@@ -718,6 +706,7 @@ def check_tirage_definition(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@renderer_classes([JSONRenderer])
 def tirage_défini(request):
     try:
         baladiyat = Baladiya.objects.filter(id_utilisateur=request.user.id).first()
@@ -730,13 +719,13 @@ def tirage_défini(request):
                 'nombre_waiting': tirage.nombre_waiting,
                 'tirage_fini': tirage.tirage_fini
             }
-            return JsonResponse({'message': 'tirage défini', 'tirage': tirage_data})
+            return Response(tirage_data)
 
         else:
-            return JsonResponse({'message': 'tirage non défini'})
+            return Response({'message': 'tirage non défini'}, 404)
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
    
 
 #for visite medical...........................................
