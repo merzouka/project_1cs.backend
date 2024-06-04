@@ -152,26 +152,39 @@ def fetch_winners(request):
             selected_winners = []
             for winner_id in winner_user_ids:
                 winner = user.objects.get(id=winner_id)
+                print(winner.city)
                 if winner.gender == 'M':
-                    
                     winner_json = {
                         'id':winner.id,
+                        'city': winner.city,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender
                     }
-                    selected_winners.append(winner_json)    
-                    
+                    selected_winners.append(winner_json)
+
                 else:
-                     winner_json = {
+                    mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
+                    mahram_json = {
+                        'id':mahram.id,
+                        'city': winner.city,
+                        'first_name': mahram.first_name,
+                        'last_name': mahram.last_name,
+                        'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
+                        'gender': mahram.gender
+                    }
+                    winner_json = {
                         'id':winner.id,
+                        'city': winner.city,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender,
-                        'maahram_id': Haaj.objects.get(user=winner).maahram_id
-                }
+                        'maahram_id': mahram.id
+                    }
+                    selected_winners.append(winner_json)
+                    selected_winners.append(mahram_json)
             return Response({ "winners": selected_winners }, 200)
 
 
