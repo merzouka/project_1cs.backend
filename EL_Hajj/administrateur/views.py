@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.db import transaction
 # Create your views here.
 
+
 @api_view(["GET"])
 def user_list(request):
 #     users_list = user.objects.all()
@@ -17,7 +18,21 @@ def user_list(request):
 #     
 #     page = request.GET.get('page')
 #     users = paginator.get_page(page)
+    role = request.GET.get('role')
+    province = request.GET.get('province')
+    city = request.GET.get('city')
     users_list = user.objects.all()
+    if not role:
+        users_list.filter(role=role)
+    if not province:
+        if not city:
+            baladiya_users = Baladiya.objects.filter(id=city).id_utilisateur
+            users_list.filter(id__in=baladiya_users)
+        else:
+            province_users = Baladiya.objects.filter(province)
+
+
+
     paginator = PageNumberPagination()
     paginator.page_size = 5
     users = paginator.paginate_queryset(users_list, request)

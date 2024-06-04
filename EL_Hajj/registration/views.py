@@ -135,8 +135,8 @@ def fetch_winners(request):
                 baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
                 first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
         else:
-            if user_instance.view_tirage:
-                return Response({'error': 'Vous avez consulté le tirage'}, status=404)
+            # if user_instance.view_tirage:
+            #     return Response({'error': 'Vous avez consulté le tirage'}, status=404)
 
             user_city=user_instance.city
             wilaya_city=user_instance.province
@@ -148,29 +148,43 @@ def fetch_winners(request):
             # removed winner field since it is not in data set, when algo executed it didn't set it
             # winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner).values_list('id', flat=True)).values_list('nin', flat=True)
             winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)).values_list('nin', flat=True)
+            print(winner_user_ids)
             selected_winners = []
             for winner_id in winner_user_ids:
                 winner = user.objects.get(id=winner_id)
+                print(winner.city)
                 if winner.gender == 'M':
-                    
                     winner_json = {
                         'id':winner.id,
+                        'city': winner.city,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender
                     }
-                    
+                    selected_winners.append(winner_json)
+
                 else:
-                     winner_json = {
+                    mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
+                    mahram_json = {
+                        'id':mahram.id,
+                        'city': winner.city,
+                        'first_name': mahram.first_name,
+                        'last_name': mahram.last_name,
+                        'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
+                        'gender': mahram.gender
+                    }
+                    winner_json = {
                         'id':winner.id,
+                        'city': winner.city,
                         'first_name': winner.first_name,
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender,
-                        'maahram_id': winner.maahram_id
-                }
-                selected_winners.append(winner_json)    
+                        'maahram_id': mahram.id
+                    }
+                    selected_winners.append(winner_json)
+                    selected_winners.append(mahram_json)
             return Response({ "winners": selected_winners }, 200)
 
 
@@ -820,6 +834,7 @@ def winners_accepted(request):
         
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
         
+
         
         winners = Winners.objects.filter(
             nin__in=user.objects.filter(city__in=baladiya_names).values('id'),
