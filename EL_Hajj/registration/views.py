@@ -161,6 +161,7 @@ def fetch_winners(request):
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender
                     }
+                    selected_winners.append(winner_json)    
                     
                 else:
                      winner_json = {
@@ -169,9 +170,8 @@ def fetch_winners(request):
                         'last_name': winner.last_name,
                         'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
                         'gender': winner.gender,
-                        'maahram_id': winner.maahram_id
+                        'maahram_id': Haaj.objects.get(user=winner).maahram_id
                 }
-                selected_winners.append(winner_json)    
             return Response({ "winners": selected_winners }, 200)
 
 
@@ -821,6 +821,7 @@ def winners_accepted(request):
         
         baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
         
+
         
         winners = Winners.objects.filter(
             nin__in=user.objects.filter(city__in=baladiya_names).values('id'),
