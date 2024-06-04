@@ -169,21 +169,8 @@ def login_user(request):
                 request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
-            resp["personal_picture"] = u.personal_picture.url if u.personal_picture else None
-            
-            if u.role == "user":
-                resp["message"] = "Welcome, user"
-            elif u.role == "administrateur" :
-                resp["message"] = "Welcome, administrateur!"
-            else : 
-                resp["message"] = "Welcome, medecin!"
-            
-            
                 
             return Response(resp,status=200)
-            # if u.is_email_verified:
-            # else:
-            #     return Response({'message':'email is not verified'},status=400)
             
         else:
             return Response({'error': 'Invalid email or password'}, status=401)
@@ -247,8 +234,8 @@ def get_user_info(request,email):
             
     else : 
         return JsonResponse({'error':'methode not allowed'},status=405)
-        
-        
+
+
 @api_view(["PATCH"])       
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
@@ -274,6 +261,7 @@ def get_currently_logged_user(request):
     if request.user.is_authenticated :
         current_user = user.objects.get(email=request.user.email)
         user_info = {
+            'id': current_user.id,
             'first_name' : current_user.first_name,
             'last_name' : current_user.last_name,
             'phone' : current_user.phone,

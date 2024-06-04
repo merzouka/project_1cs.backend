@@ -36,7 +36,6 @@ def user_list(request):
     paginator = PageNumberPagination()
     paginator.page_size = 5
     users = paginator.paginate_queryset(users_list, request)
-
     
     serialized_user = [{
         'id': u.id,
