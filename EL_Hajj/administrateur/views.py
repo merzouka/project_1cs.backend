@@ -1,28 +1,36 @@
 from django.shortcuts import render
-from django.core.paginator import Paginator
+# from django.core.paginator import Paginator
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
 from authentication.models import user
 from registration.models import Baladiya
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, renderer_classes
 from django.http import JsonResponse
 from django.db import transaction
 # Create your views here.
 
 @api_view(["GET"])
 def user_list(request):
+#     users_list = user.objects.all()
+#     paginator = Paginator(users_list, 5)
+#     
+#     page = request.GET.get('page')
+#     users = paginator.get_page(page)
     users_list = user.objects.all()
-    paginator = Paginator(users_list, 5)
-    
-    page = request.GET.get('page')
-    users = paginator.get_page(page)
+    paginator = PageNumberPagination()
+    paginator.page_size = 5
+    users = paginator.paginate_queryset(users_list, request)
     
     serialized_user = [{
         'id': u.id,
         'email': u.email,
         'role': u.role,
         'wilaya':u.province,
-    }for u in users ]
+    }for u in users] if users else []
     
-    return JsonResponse({'users':serialized_user})
+    # return JsonResponse({'users':serialized_user})
+    return paginator.get_paginated_response(serialized_user)
 
 @api_view(["GET"])
 def search_user(request,email):
@@ -42,33 +50,29 @@ def search_user(request,email):
             return JsonResponse({'error':'user not found'})
  
  
-@api_view(["POST"])       
-def role_baladiyet_assignement(request,user_id):
+@api_view(["PATCH"])       
+@renderer_classes([JSONRenderer])
+def role_baladiyet_assignement(request):
     try :
+        user_id = request.data.get('user_id')
         u = user.objects.get(id=user_id)
         user_role = request.data.get('user_role')
         u.role = user_role
         u.save()
         
         chosen_baladiya = request.data.get('chosen_baladiya')
-        chosen_wilaya = request.data.get('chosen_wilaya')
+        existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
         
-        
-        
-        if chosen_wilaya or chosen_baladiya:
-            if chosen_wilaya:    
-                baladiyets = Baladiya.objects.filter(wilaya=chosen_wilaya)
-                
-            else: 
-                baladiyets = Baladiya.objects.filter(name__in=chosen_baladiya)
+        baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
+
+        for baladiya in baladiyets:
+            baladiya.id_utilisateur.add(u)
+
+        for baladiya in existing_baladiyats:
+            if baladiya not in baladiyets:
+                baladiya.id_utilisateur.remove(u)
             
-                
-            for baladiya in baladiyets:
-                baladiya.id_utilisateur.add(u)
-            
-        else:
-            return JsonResponse({'error':'invalide input'})
-        return JsonResponse({'message':'association done'})
+        return Response({'message':'association done'})
     except u.DoesNotExist:
         return JsonResponse({'error':'user not found'})
     
