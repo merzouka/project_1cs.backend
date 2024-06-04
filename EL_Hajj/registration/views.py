@@ -135,8 +135,8 @@ def fetch_winners(request):
                 baladiya_names = [baladiya.name for baladiya in baladiyas_in_group]
                 first_baladiya = Baladiya.objects.filter(id_utilisateur=user_instance).first()
         else:
-            if user_instance.view_tirage:
-                return Response({'error': 'Vous avez consulté le tirage'}, status=404)
+            # if user_instance.view_tirage:
+            #     return Response({'error': 'Vous avez consulté le tirage'}, status=404)
 
             user_city=user_instance.city
             wilaya_city=user_instance.province
@@ -148,6 +148,7 @@ def fetch_winners(request):
             # removed winner field since it is not in data set, when algo executed it didn't set it
             # winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names, winner).values_list('id', flat=True)).values_list('nin', flat=True)
             winner_user_ids = Winners.objects.filter(nin__in=user.objects.filter(city__in=baladiya_names).values_list('id', flat=True)).values_list('nin', flat=True)
+            print(winner_user_ids)
             selected_winners = []
             for winner_id in winner_user_ids:
                 winner = user.objects.get(id=winner_id)
