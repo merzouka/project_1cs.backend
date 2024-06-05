@@ -5,7 +5,8 @@ from .views import associate_winner_vol_hotel
 urlpatterns = [
     path('administrateur/list',views.user_list),
     path('administrateur/search-user/<str:email>',views.search_user),
-    path('administrateur/assigne-role-baladiyet',views.role_baladiyet_assignement),
+    path('administrateur/assigne-role-baladiyet/',views.role_baladiyet_assignement),
+    path("administrateur/search-by-role-baladiya-wilaya",views.users_by_role_wilaya_baladiya),
     path("administrateur/search-role-wilaya",views.users_role_wilaya),
     path("administrateur/delete-assignement",views.delete_baladiya_role_assignement),
     path("administrateur/add-vole",views.add_vol),

@@ -103,6 +103,7 @@ class user(AbstractBaseUser):
         ('F', 'female'),
     ]
     gender = models.CharField(max_length=1, choices=STATUS_CHOICES, default='M',blank=False)
+    view_tirage=models.BooleanField(default=False)
     nombreInscription = models.PositiveSmallIntegerField(default = 0)
     winner=models.BooleanField(default=False)
     winning_date = models.DateField(null=True , default=None)

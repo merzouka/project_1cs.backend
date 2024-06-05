@@ -1,9 +1,12 @@
 from django.shortcuts import render
-from django.core.paginator import Paginator
-from authentication.models import user
-from registration.models import Winners,Baladiya,Haaj
-from rest_framework.decorators import api_view,renderer_classes
+# from django.core.paginator import Paginator
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from authentication.models import user
+from rest_framework.response import Response
+from registration.models import Baladiya
+from rest_framework.decorators import api_view, renderer_classes
 from django.http import JsonResponse
 from .serializers import hotelSerializer,voleSerializer
 from django.shortcuts import get_object_or_404
@@ -12,23 +15,44 @@ from rest_framework.renderers import JSONRenderer
 
 # Create your views here.
 
+
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
 def user_list(request):
+#     users_list = user.objects.all()
+#     paginator = Paginator(users_list, 5)
+#     
+#     page = request.GET.get('page')
+#     users = paginator.get_page(page)
+    role = request.GET.get('role')
+    province = request.GET.get('province')
+    city = request.GET.get('city')
     users_list = user.objects.all()
-    paginator = Paginator(users_list, 10)
-    
-    page = request.GET.get('page')
-    users = paginator.get_page(page)
+
+    if not role:
+        users_list.filter(role=role)
+    if not province:
+        if not city:
+            baladiya_users = Baladiya.objects.filter(id=city).id_utilisateur
+            users_list.filter(id__in=baladiya_users)
+        else:
+            province_users = Baladiya.objects.filter(province)
+
+
+
+    paginator = PageNumberPagination()
+    paginator.page_size = 5
+    users = paginator.paginate_queryset(users_list, request)
     
     serialized_user = [{
         'id': u.id,
         'email': u.email,
         'role': u.role,
         'wilaya':u.province,
-    }for u in users ]
+    }for u in users] if users else []
     
-    return JsonResponse({'users':serialized_user})
+    # return JsonResponse({'users':serialized_user})
+    return paginator.get_paginated_response(serialized_user)
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -49,34 +73,28 @@ def search_user(request,email):
             return Response({'error':'user not found'})
  
  
-@api_view(["POST"])  
-@renderer_classes([JSONRenderer])     
+@api_view(["PATCH"])       
+@renderer_classes([JSONRenderer])
 def role_baladiyet_assignement(request):
-    user_id = request.data.get('user_id') 
     try :
+        user_id = request.data.get('user_id')
         u = user.objects.get(id=user_id)
         user_role = request.data.get('user_role')
         u.role = user_role
         u.save()
         
         chosen_baladiya = request.data.get('chosen_baladiya')
-        chosen_wilaya = request.data.get('chosen_wilaya')
+        existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
         
-        
-        
-        if chosen_wilaya or chosen_baladiya:
-            if chosen_wilaya:    
-                baladiyets = Baladiya.objects.filter(wilaya=chosen_wilaya)
-                
-            else: 
-                baladiyets = Baladiya.objects.filter(name__in=chosen_baladiya)
+        baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
+
+        for baladiya in baladiyets:
+            baladiya.id_utilisateur.add(u)
+
+        for baladiya in existing_baladiyats:
+            if baladiya not in baladiyets:
+                baladiya.id_utilisateur.remove(u)
             
-                
-            for baladiya in baladiyets:
-                baladiya.id_utilisateur.add(u)
-            
-        else:
-            return Response({'error':'invalide input'})
         return Response({'message':'association done'})
     except u.DoesNotExist:
         return Response({'error':'user not found'})
@@ -271,7 +289,6 @@ def add_vol(request):
         
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=404)            
-            
 
 @api_view(["POST"])
 @renderer_classes([JSONRenderer])
@@ -465,6 +482,3 @@ def responsable_users(request):
     
     return Response({'users': serialized_users})
 
-   
-    
-    
