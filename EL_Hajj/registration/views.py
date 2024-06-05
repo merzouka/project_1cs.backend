@@ -124,24 +124,24 @@ def get_male_winner_info(winner: user):
         'gender': winner.gender
     }
 
-def get_female_winner_info(winner: user):
-    return [
-        winner_json,
-        mahram_json
-    ]
+def get_female_winner_info(winner: user, mahram: user):
+    return {
+        'id':winner.id,
+        'city': winner.city,
+        'first_name': winner.first_name,
+        'last_name': winner.last_name,
+        'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
+        'gender': winner.gender,
+        'maahram_id': mahram.id
+    }
 
 
 def save_male_winner(selected: Haaj, candidats: list[Haaj], selected_winners):
     selected.user.winner = True 
     selected.user.winning_date= timezone.now()  
     selected.save()
-    selected_winners.append({
-        'id':selected.user.id,
-        'first_name': selected.user.first_name,
-        'last_name': selected.user.last_name,
-        'personal_picture': selected.personal_picture.url if selected.personal_picture else None,
-        'gender':selected.user.gender
-    })
+    selected_user = selected.user
+    selected_winners.append(get_male_winner_info(selected_user))
     Winners.objects.create(nin=selected.user.id)
     candidats = list(filter((selected).__ne__, candidats))
     return [candidats, selected_winners]
@@ -150,68 +150,38 @@ def save_female_winner(selected: Haaj, condidats, selected_winners):
     selected.user.winner = True 
     selected.user.winning_date= timezone.now()  
     selected.user.save()
-    selected_winners.append({
-        'id':selected.user.id,
-        'first_name': selected.user.first_name,
-        'last_name': selected.user.last_name,
-        'personal_picture': selected.personal_picture.url if selected.personal_picture else None,
-        'gender':selected.user.gender,
-        'maahram_id':selected.maahram_id
-    })
-    #condidats2.remove(selected)
     condidats = list(filter((selected).__ne__, condidats))
     Winners.objects.create(nin=selected.user.id)
 
     maahram_instance = user.objects.get(id=selected.maahram_id)
+    selected_user = selected.user
+    selected_winners.append(get_female_winner_info(selected_user, maahram_instance))
     if maahram_instance.id not in list(map(lambda winner: winner["id"], selected_winners)):
         maahram_instance.winner = True 
         maahram_instance.winning_date= timezone.now()
         maahram_instance.save()
-        selected_winners.append({
-            'id':maahram_instance.id,
-            'first_name': maahram_instance.first_name,
-            'last_name': maahram_instance.last_name,
-            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
-            'gender':maahram_instance.gender
-        })
+        selected_winners.append(get_male_winner_info(maahram_instance))
         Winners.objects.create(nin=maahram_instance.id)
         condidats = list(filter(lambda candidat: candidat.id != maahram_instance.id, condidats))
 
     return [condidats, selected_winners, maahram_instance]
 
 def save_male_waiting(selected: Haaj, selected_waiting, candidats: list[Haaj]):
-    selected_waiting.append({
-        'id':selected.user.id,
-        'first_name': selected.user.first_name,
-        'last_name': selected.user.last_name,
-        'personal_picture': selected.personal_picture.url if selected.personal_picture else None,
-        'gender':selected.user.gender
-    })
+    selected_user = selected.user
+    selected_waiting.append(get_male_winner_info(selected_user))
     candidats = list(filter((selected).__ne__, candidats))
     WaitingList.objects.create(nin=selected.user.id)
     return [candidats, selected_waiting]
 
 
 def save_female_waiting(selected: Haaj, selected_waiting, candidats: list[Haaj]):
-    selected_waiting.append({
-        'id':selected.user.id,
-        'first_name': selected.user.first_name,
-        'last_name': selected.user.last_name,
-        'personal_picture': selected.personal_picture.url if selected.personal_picture else None,
-        'gender':selected.user.gender,
-        'maahram_id':selected.maahram_id
-    })
     candidats = list(filter((selected).__ne__, candidats))
     WaitingList.objects.create(nin=selected.user.id)
     maahram_instance = user.objects.get(id=selected.maahram_id)
+    selected_user = selected.user
+    selected_waiting.append(get_female_winner_info(selected_user, maahram_instance))
     if maahram_instance.id not in list(map(lambda waiting: waiting["id"], selected_waiting)):
-        selected_waiting.append({
-            'id':maahram_instance.id,
-            'first_name': maahram_instance.first_name,
-            'last_name': maahram_instance.last_name,
-            'personal_picture': maahram_instance.personal_picture.url if maahram_instance.personal_picture else None,
-            'gender':maahram_instance.gender
-        })
+        selected_waiting.append(get_male_winner_info(maahram_instance))
         WaitingList.objects.create(nin=maahram_instance.id)
         candidats = list(filter(lambda candidat: candidat.id != maahram_instance.id, candidats))
     return [candidats, selected_waiting, maahram_instance]
@@ -264,15 +234,7 @@ def fetch_winners(request):
                             }
                             user_ids.append(mahram.id)
                             selected_winners.append(mahram_json)
-                        winner_json = {
-                            'id':winner.id,
-                            'city': winner.city,
-                            'first_name': winner.first_name,
-                            'last_name': winner.last_name,
-                            'personal_picture': winner.personal_picture.url if winner.personal_picture else None,
-                            'gender': winner.gender,
-                            'maahram_id': mahram.id
-                        }
+                        winner_json = get_female_winner_info(winner, mahram) 
                         selected_winners.append(winner_json)
                         user_ids.append(winner.id)
             return Response({ "winners": selected_winners }, 200)
