@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-from cloudinary.models import CloudinaryField
+from cloudinary.models import CloudinaryField # type: ignore
 
 PROVINCES = [
     (1, 'Wilaya d''Adrar'),
@@ -68,7 +68,7 @@ roles = [
     ("administrateur","administrateur"),
     ("responsable tirage","responsable tirage"),
     ("medecin","medecin"),
-    ("Hedj","Hedj"),
+    ("hedj","hedj"),
     ("banquier","banquier"),
 ]
 
