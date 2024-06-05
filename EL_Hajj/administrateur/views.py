@@ -19,11 +19,6 @@ from rest_framework.renderers import JSONRenderer
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
 def user_list(request):
-#     users_list = user.objects.all()
-#     paginator = Paginator(users_list, 5)
-#     
-#     page = request.GET.get('page')
-#     users = paginator.get_page(page)
     role = request.GET.get('role')
     province = request.GET.get('province')
     city = request.GET.get('city')
@@ -31,14 +26,8 @@ def user_list(request):
 
     if not role:
         users_list.filter(role=role)
-    if not province:
-        if not city:
-            baladiya_users = Baladiya.objects.filter(id=city).id_utilisateur
-            users_list.filter(id__in=baladiya_users)
-        else:
-            province_users = Baladiya.objects.filter(province)
 
-
+    # add province and city filters
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
@@ -51,7 +40,6 @@ def user_list(request):
         'wilaya':u.province,
     }for u in users] if users else []
     
-    # return JsonResponse({'users':serialized_user})
     return paginator.get_paginated_response(serialized_user)
 
 @api_view(["GET"])
