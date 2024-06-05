@@ -138,44 +138,47 @@ def get_female_winner_info(winner: user, mahram: user):
 
 def save_male_winner(selected: Haaj, candidats: list[Haaj], selected_winners):
     selected.user.winner = True 
+    selected.user.nombreInscription = 0
     selected.user.winning_date= timezone.now()  
     selected.save()
     selected_user = selected.user
     selected_winners.append(get_male_winner_info(selected_user))
     Winners.objects.create(nin=selected.user.id)
-    candidats = list(filter((selected).__ne__, candidats))
+    candidats = list(filter(lambda candidat: candidat.id != selected.id, candidats))
     return [candidats, selected_winners]
 
-def save_female_winner(selected: Haaj, condidats, selected_winners):
+def save_female_winner(selected: Haaj, candidats: list[Haaj], selected_winners):
     selected.user.winner = True 
+    selected.user.nombreInscription = 0
     selected.user.winning_date= timezone.now()  
     selected.user.save()
-    condidats = list(filter((selected).__ne__, condidats))
     Winners.objects.create(nin=selected.user.id)
+    candidats = list(filter(lambda candidat: candidat.id != selected.id, candidats))
 
     maahram_instance = user.objects.get(id=selected.maahram_id)
     selected_user = selected.user
     selected_winners.append(get_female_winner_info(selected_user, maahram_instance))
     if maahram_instance.id not in list(map(lambda winner: winner["id"], selected_winners)):
         maahram_instance.winner = True 
+        maahram_instance.nombreInscription = 0
+        maahram_instance.role = 'Hedj'
         maahram_instance.winning_date= timezone.now()
         maahram_instance.save()
         selected_winners.append(get_male_winner_info(maahram_instance))
         Winners.objects.create(nin=maahram_instance.id)
-        condidats = list(filter(lambda candidat: candidat.id != maahram_instance.id, condidats))
+        candidats = list(filter(lambda candidat: candidat.user.id != maahram_instance.id, candidats))
+    return [candidats, selected_winners, maahram_instance]
 
-    return [condidats, selected_winners, maahram_instance]
-
-def save_male_waiting(selected: Haaj, selected_waiting, candidats: list[Haaj]):
+def save_male_waiting(selected: Haaj, candidats: list[Haaj], selected_waiting):
     selected_user = selected.user
     selected_waiting.append(get_male_winner_info(selected_user))
-    candidats = list(filter((selected).__ne__, candidats))
+    candidats = list(filter(lambda candidat: candidat.id != selected.id, candidats))
     WaitingList.objects.create(nin=selected.user.id)
     return [candidats, selected_waiting]
 
 
-def save_female_waiting(selected: Haaj, selected_waiting, candidats: list[Haaj]):
-    candidats = list(filter((selected).__ne__, candidats))
+def save_female_waiting(selected: Haaj, candidats: list[Haaj], selected_waiting):
+    candidats = list(filter(lambda candidat: candidat.id != selected.id, candidats))
     WaitingList.objects.create(nin=selected.user.id)
     maahram_instance = user.objects.get(id=selected.maahram_id)
     selected_user = selected.user
@@ -183,281 +186,294 @@ def save_female_waiting(selected: Haaj, selected_waiting, candidats: list[Haaj])
     if maahram_instance.id not in list(map(lambda waiting: waiting["id"], selected_waiting)):
         selected_waiting.append(get_male_winner_info(maahram_instance))
         WaitingList.objects.create(nin=maahram_instance.id)
-        candidats = list(filter(lambda candidat: candidat.id != maahram_instance.id, candidats))
+        candidats = list(filter(lambda candidat: candidat.user.id != maahram_instance.id, candidats))
     return [candidats, selected_waiting, maahram_instance]
 
+def get_allots(allotted, real):
+    extra = 0
+    for i in range(len(allotted)):
+        if real[i] < allotted[i]:
+            extra += allotted[i] - real[i]
+            allotted[i] = real[i]
+    
+    # distribution of extra allots
+    prev = 0
+    while prev != extra and extra > 0:
+        prev = extra
+        for i in range(len(allotted)):
+            if allotted[i] < real[i]:
+                allotted[i] += 1
+                extra -= 1
+            if extra == 0:
+                break
+    return allotted
 
 @api_view(['GET'])
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
 def fetch_winners(request):
-    try:
-        user_instance = request.user
-        role_user=user_instance.role
-        baladiya_group = []
-        if role_user == 'responsable tirage':
-            baladiya_group = Baladiya.objects.filter(id_utilisateur=user_instance)
-            first_baladiya = baladiya_group[0]
-        else:
-            user_city=user_instance.city
-            wilaya_city=user_instance.province
-            first_baladiya=Baladiya.objects.get(name=user_city, wilaya=wilaya_city)
-            tirage_baladiya=first_baladiya.tirage_id
-            baladiya_group = Baladiya.objects.filter(tirage_id=tirage_baladiya)
+    user_instance = request.user
+    role_user=user_instance.role
+    baladiya_group = []
+    if role_user == 'responsable tirage':
+        baladiya_group = Baladiya.objects.filter(id_utilisateur=user_instance)
+        first_baladiya = baladiya_group[0]
+    else:
+        user_city=user_instance.city
+        wilaya_city=user_instance.province
+        first_baladiya=Baladiya.objects.get(name=user_city, wilaya=wilaya_city)
+        tirage_baladiya=first_baladiya.tirage_id
+        baladiya_group = Baladiya.objects.filter(tirage_id=tirage_baladiya)
 
-        if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_fini:
-            winner_user_ids = []
-            for baladiya in baladiya_group:
-                winner_user_ids.extend(
-                    Winners.objects
-                    .filter(nin__in=user.objects.filter(city__iexact=baladiya.name)
-                    .filter(province=baladiya.wilaya).values_list('id', flat=True))
-                    .values_list('nin', flat=True)
-                )
-            selected_winners = []
-            user_ids = []
-            for winner_id in winner_user_ids:
-                winner = user.objects.get(id=winner_id)
-                if winner.id not in user_ids:
-                    if winner.gender == 'M':
-                        selected_winners.append(get_male_winner_info(winner))
+    if first_baladiya and first_baladiya.tirage and first_baladiya.tirage.tirage_fini:
+        winner_user_ids = []
+        for baladiya in baladiya_group:
+            winner_user_ids.extend(
+                Winners.objects
+                .filter(nin__in=user.objects.filter(city__iexact=baladiya.name)
+                .filter(province=baladiya.wilaya).values_list('id', flat=True))
+                .order_by('id')
+                .values_list('nin', flat=True)
+            )
+        selected_winners = []
+        user_ids = []
+        for winner_id in winner_user_ids:
+            winner = user.objects.get(id=winner_id)
+            if winner.id not in user_ids:
+                if winner.gender == 'M':
+                    selected_winners.append(get_male_winner_info(winner))
+                else:
+                    mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
+                    winner_json = get_female_winner_info(winner, mahram) 
+                    selected_winners.append(winner_json)
+                    user_ids.append(winner.id)
+                    if mahram.id not in user_ids:
+                        mahram_json = {
+                            'id':mahram.id,
+                            'city': winner.city,
+                            'first_name': mahram.first_name,
+                            'last_name': mahram.last_name,
+                            'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
+                            'gender': mahram.gender
+                        }
+                        user_ids.append(mahram.id)
+                        selected_winners.append(mahram_json)
+        return Response({ "winners": selected_winners, 'nombre_de_place': first_baladiya.tirage.nombre_de_place }, 200)
+
+    else:       
+        condidats = []
+        for baladiya in baladiya_group:
+            haajs_in_city = Haaj.objects.filter(user__city=baladiya.name).filter(user__province=baladiya.wilaya)
+            condidats.extend(haajs_in_city)
+        condidats2 =[]
+
+        for haaj in condidats:
+            times_to_add = haaj.user.nombreInscription
+            condidats2.extend([haaj] * times_to_add)
+
+
+        id_tirage = first_baladiya.tirage.id
+        tirage = Tirage.objects.get(id=id_tirage)
+        number_of_winners_needed = tirage.nombre_de_place
+        number_of_waiting_needed = tirage.nombre_waiting
+        type_de_tirage = tirage.type_tirage
+        tirage.tirage_fini = True
+        tirage.save()
+
+        
+        selected_winners = []
+        selected_waiting=[]
+
+        if type_de_tirage == 1:
+            while len(selected_winners) < number_of_winners_needed and len(condidats2) > 0:
+                selected_condidat = random.choice(condidats2)
+                if selected_condidat.user.gender == 'M':
+                    condidats2, selected_winners = save_male_winner(selected_condidat, condidats2, selected_winners)
+                elif selected_condidat.user.gender == 'F':
+                    if len(selected_winners) == number_of_winners_needed - 1:
+                        left_males = [condidat for condidat in condidats2 if condidat.user.gender == 'M']
+                        if len(left_males) > 0:
+                            last_male_condidat = random.choice(left_males)
+                            condidats2, selected_winners = save_male_winner(last_male_condidat, condidats2, selected_winners)
+
                     else:
-                        mahram = user.objects.get(id=Haaj.objects.get(user=winner).maahram_id)
-                        if mahram.id not in user_ids:
-                            mahram_json = {
-                                'id':mahram.id,
-                                'city': winner.city,
-                                'first_name': mahram.first_name,
-                                'last_name': mahram.last_name,
-                                'personal_picture': mahram.personal_picture.url if mahram.personal_picture else None,
-                                'gender': mahram.gender
-                            }
-                            user_ids.append(mahram.id)
-                            selected_winners.append(mahram_json)
-                        winner_json = get_female_winner_info(winner, mahram) 
-                        selected_winners.append(winner_json)
-                        user_ids.append(winner.id)
-            return Response({ "winners": selected_winners }, 200)
-
-        else:       
-            condidats = []
-            for baladiya in baladiya_group:
-                haajs_in_city = Haaj.objects.filter(user__city=baladiya.name).filter(user__province=baladiya.wilaya)
-                condidats.extend(haajs_in_city)
-            condidats2 =[]
-
-            for haaj in condidats:
-                times_to_add = haaj.user.nombreInscription
-                condidats2.extend([haaj] * times_to_add)
+                        condidats2, selected_winners, _ = save_female_winner(selected_condidat, condidats2, selected_winners)
 
 
-            id_tirage = first_baladiya.tirage.id
-            tirage = Tirage.objects.get(id=id_tirage)
-            number_of_winners_needed = tirage.nombre_de_place
-            number_of_waiting_needed = tirage.nombre_waiting
-            type_de_tirage = tirage.type_tirage
-            tirage.tirage_fini = True
-            tirage.save()
+            #witing list code................
+            while len(selected_waiting) < number_of_waiting_needed and len(condidats2) > 0:
+                selected_condidat = random.choice(condidats2)
+                if selected_condidat.user.gender == 'M':
+                    condidats2, selected_waiting = save_male_waiting(selected_condidat, condidats2, selected_waiting)
+                elif selected_condidat.user.gender == 'F':
+                    if len(selected_waiting) == number_of_waiting_needed - 1:
+                        left_males = [condidat for condidat in condidats2 if condidat.user.gender == 'M']
+                        if len(left_males) > 0:
+                            last_male_condidat = random.choice(left_males)
+                            condidats2, selected_waiting = save_male_waiting(last_male_condidat, condidats2, selected_waiting)
+                    else:
+                        condidats2, selected_waiting, _ = save_female_waiting(selected_condidat, condidats2, selected_waiting)
 
-            
-            selected_winners = []
-            selected_waiting=[]
+                                
 
-            if type_de_tirage == 1:
-                while len(selected_winners) < number_of_winners_needed and len(condidats2) > 0:
-                    selected_condidat = random.choice(condidats2)
+        elif type_de_tirage == 2:
+            condidats2_over_60 = []
+            condidats2_under_60 = []
+
+            for haaj in condidats2:
+                user_age_days = (datetime.date.today() - haaj.user.dateOfBirth).days
+                user_age_years = user_age_days / 365.2425 
+                if user_age_years > 60:
+                    condidats2_over_60.append(haaj)
+                else:
+                    condidats2_under_60.append(haaj)
+
+            selected_winners_old = []
+            selected_winners_young = []
+            selected_waiting_old=[]
+            selected_waiting_young=[]
+            tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
+            calculated_old = int((tranche_age * number_of_winners_needed) / 100)
+            calculated_young = number_of_winners_needed-calculated_old
+            nombre_old, nombre_young = get_allots(
+                [calculated_old, calculated_young],
+                [len(condidats2_over_60), len(condidats2_under_60)]
+            )
+
+
+            if condidats2_over_60:
+                while len(selected_winners_old) < nombre_old and len(condidats2_over_60) > 0:
+                    selected_condidat = random.choice(condidats2_over_60)
                     if selected_condidat.user.gender == 'M':
-                        condidats2, selected_winners = save_male_winner(selected_condidat, condidats2, selected_winners)
+                        condidats2_over_60, selected_winners_old = save_male_winner(
+                            selected_condidat,
+                            condidats2_over_60,
+                            selected_winners_old
+                        )
+                        
                     elif selected_condidat.user.gender == 'F':
-                        if len(selected_winners) == number_of_winners_needed - 1:
-                            left_males = [condidat for condidat in condidats2 if condidat.user.gender == 'M']
+                        if len(selected_winners_old) == nombre_old - 1:
+                            left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
                             if len(left_males) > 0:
                                 last_male_condidat = random.choice(left_males)
-                                condidats2, selected_winners = save_male_winner(last_male_condidat, condidats2, selected_winners)
-
+                                condidats2_over_60, selected_winners_old = save_male_winner(
+                                    last_male_condidat,
+                                    condidats2_over_60,
+                                    selected_winners_old
+                                )
                         else:
-                            condidats2, selected_winners, _ = save_female_winner(selected_condidat, condidats2, selected_winners)
-
-
-                #witing list code................
-                while len(selected_waiting) < number_of_waiting_needed and len(condidats2) > 0:
-                    selected_condidat = random.choice(condidats2)
-                    if selected_condidat.user.gender == 'M':
-                        condidats2, selected_waiting = save_male_waiting(selected_condidat, condidats2, selected_waiting)
-                    elif selected_condidat.user.gender == 'F':
-                        if len(selected_waiting) == number_of_waiting_needed - 1:
-                            left_males = [condidat for condidat in condidats2 if condidat.user.gender == 'M']
-                            if len(left_males) > 0:
-                                last_male_condidat = random.choice(left_males)
-                                condidats2, selected_waiting, _ = save_male_waiting(last_male_condidat, condidats2, selected_waiting)
-                        else:
-                            condidats2, selected_waiting, _ = save_female_waiting(selected_condidat, condidats2, selected_waiting)
-
-                                    
-
-            elif type_de_tirage == 2:
-                condidats2_over_60 = []
-                condidats2_under_60 = []
-
-                for haaj in condidats2:
-                    user_age_days = (datetime.date.today() - haaj.user.dateOfBirth).days
-                    user_age_years = user_age_days / 365.2425 
-                    if user_age_years > 60:
-                        condidats2_over_60.append(haaj)
-                    else:
-                        condidats2_under_60.append(haaj)
-
-                selected_winners_old = []
-                selected_winners_young = []
-                selected_waiting_old=[]
-                selected_waiting_young=[]
-                tranche_age = Tirage.objects.get(id=id_tirage).tranche_age
-                calculated_old = int((tranche_age * number_of_winners_needed) / 100)
-                calculated_young = number_of_winners_needed-calculated_old
-                extra_old = calculated_old - len(condidats2_over_60)
-                extra_new = calculated_young - len(condidats2_under_60)
-                nombre_old = 0 if extra_old > 0 else calculated_old + max(0, extra_new)
-                nombre_young = 0 if extra_new > 0 else calculated_young + max(0, extra_old)
-                print(nombre_old)
-                print(nombre_young)
-
-
-                if condidats2_over_60:
-                    while len(selected_winners_old) < nombre_old and len(condidats2_over_60) > 0:
-                        selected_condidat = random.choice(condidats2_over_60)
-                        if selected_condidat.user.gender == 'M':
-                            condidats2_over_60, selected_winners_old = save_male_winner(
+                            condidats2_over_60, selected_winners_old, mahram = save_female_winner(
                                 selected_condidat,
                                 condidats2_over_60,
                                 selected_winners_old
                             )
-                            
-                        elif selected_condidat.user.gender == 'F':
-                            if len(selected_winners_old) == nombre_old - 1:
-                                left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
-                                if len(left_males) > 0:
-                                    last_male_condidat = random.choice(left_males)
-                                    condidats2_over_60, selected_winners_old = save_male_winner(
-                                        last_male_condidat,
-                                        condidats2_over_60,
-                                        selected_winners_old
-                                    )
-                            else:
-                                condidats2_over_60, selected_winners_old, mahram = save_female_winner(
-                                    selected_condidat,
-                                    condidats2_over_60,
-                                    selected_winners_old
-                                )
-                                condidats2_under_60 = list(filter(lambda candidat: candidat["id"] != mahram.id, condidats2_under_60))
+                            condidats2_under_60 = list(filter(lambda candidat: candidat.user.id != mahram.id, condidats2_under_60))
 
-                if condidats2_under_60:                           
-                    while len(selected_winners_young) < nombre_young and len(condidats2_under_60) > 0:
-                        selected_condidat = random.choice(condidats2_under_60)
-                        if selected_condidat.user.gender == 'M':
-                            condidats2_under_60, selected_winners_young = save_male_winner(
-                                selected_condidat,
-                                condidats2_under_60,
-                                selected_winners_young
-                            )
-                            
-                        elif selected_condidat.user.gender == 'F':
-                            if len(selected_winners_young) == nombre_young - 1:
-                                left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
-                                if len(left_males) > 0:
-                                    last_male_condidat = random.choice(left_males)
-                                    condidats2_under_60, selected_winners_young, mahram = save_male_winner(
-                                        selected_condidat,
-                                        condidats2_under_60,
-                                        selected_winners_young
-                                    )
-                            else:
-                                condidats2_under_60, selected_winners_young, mahram = save_female_winner(
+            if condidats2_under_60:                           
+                while len(selected_winners_young) < nombre_young and len(condidats2_under_60) > 0:
+                    selected_condidat = random.choice(condidats2_under_60)
+                    if selected_condidat.user.gender == 'M':
+                        condidats2_under_60, selected_winners_young = save_male_winner(
+                            selected_condidat,
+                            condidats2_under_60,
+                            selected_winners_young
+                        )
+                        
+                    elif selected_condidat.user.gender == 'F':
+                        if len(selected_winners_young) == nombre_young - 1:
+                            left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
+                            if len(left_males) > 0:
+                                last_male_condidat = random.choice(left_males)
+                                condidats2_under_60, selected_winners_young, mahram = save_male_winner(
                                     selected_condidat,
                                     condidats2_under_60,
                                     selected_winners_young
                                 )
-                                condidats2_over_60 = list(filter(lambda candidat: candidat["id"] != mahram.id, condidats2_over_60))
+                        else:
+                            condidats2_under_60, selected_winners_young, mahram = save_female_winner(
+                                selected_condidat,
+                                condidats2_under_60,
+                                selected_winners_young
+                            )
+                            condidats2_over_60 = list(filter(lambda candidat: candidat.user.id != mahram.id, condidats2_over_60))
 
 
 
 
 
-                #tirage  de waiting list........................;
-                calculated_old = int((tranche_age * number_of_waiting_needed) / 100)
-                calculated_young = number_of_winners_needed-calculated_old
-                extra_old = calculated_old - len(condidats2_over_60)
-                extra_new = calculated_young - len(condidats2_under_60)
-                nombre_old1 = extra_old if extra_old > 0 else calculated_old + max(0, extra_new)
-                nombre_young1 = extra_new if extra_new > 0 else calculated_young + max(0, extra_old)
+            #tirage  de waiting list........................;
+            calculated_old = int((tranche_age * number_of_waiting_needed) / 100)
+            calculated_young = number_of_winners_needed-calculated_old
+            nombre_old1, nombre_young1 = get_allots(
+                [calculated_old, calculated_young],
+                [len(condidats2_over_60), len(condidats2_under_60)]
+            )
 
-                if condidats2_over_60:
-                    while len(selected_waiting_old) < nombre_old1 and len(condidats2_over_60) > 0:
-                        selected_condidat = random.choice(condidats2_over_60)
-                        if selected_condidat.user.gender == 'M':
-                            condidats2_over_60, selected_waiting_old = save_male_waiting(
+            if condidats2_over_60:
+                while len(selected_waiting_old) < nombre_old1 and len(condidats2_over_60) > 0:
+                    selected_condidat = random.choice(condidats2_over_60)
+                    if selected_condidat.user.gender == 'M':
+                        condidats2_over_60, selected_waiting_old = save_male_waiting(
+                            selected_condidat,
+                            condidats2_over_60,
+                            selected_waiting_old
+                        )
+                        
+                    elif selected_condidat.user.gender == 'F':
+                        if len(selected_waiting_old) == nombre_old1 - 1:
+                            left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
+                            if len(left_males) > 0:
+                                last_male_condidat = random.choice(left_males)
+                                condidats2_over_60, selected_waiting_old = save_male_waiting(
+                                    last_male_condidat,
+                                    condidats2_over_60,
+                                    selected_waiting_old
+                                )
+                        else:
+                            condidats2_over_60, selected_waiting_old, mahram = save_female_waiting(
                                 selected_condidat,
                                 condidats2_over_60,
                                 selected_waiting_old
                             )
-                            
-                        elif selected_condidat.user.gender == 'F':
-                            if len(selected_waiting_old) == nombre_old1 - 1:
-                                left_males = [condidat for condidat in condidats2_over_60 if condidat.user.gender == 'M']
-                                if len(left_males) > 0:
-                                    last_male_condidat = random.choice(left_males)
-                                    condidats2_over_60, selected_waiting_old = save_male_waiting(
-                                        last_male_condidat,
-                                        condidats2_over_60,
-                                        selected_waiting_old
-                                    )
-                            else:
-                                condidats2_over_60, selected_waiting_old, mahram = save_female_waiting(
-                                    selected_condidat,
-                                    condidats2_over_60,
-                                    selected_waiting_old
+                            condidats2_under_60 = list(filter(lambda candidat: candidat.user.id != mahram.id, condidats2_under_60))
+
+
+            if condidats2_under_60:                           
+                while len(selected_waiting_young) < nombre_young1 and len(condidats2_under_60) > 0:
+                    selected_condidat = random.choice(condidats2_under_60)
+                    if selected_condidat.user.gender == 'M':
+                        condidats2_under_60, selected_waiting_young = save_male_waiting(
+                            selected_condidat,
+                            condidats2_under_60,
+                            selected_waiting_young
+                        )
+                        
+                    elif selected_condidat.user.gender == 'F':
+                        if len(selected_waiting_young) == nombre_young1 - 1:
+                            left_males = [condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M']
+                            if len(left_males) > 0:
+                                last_male_condidat = random.choice(left_males)
+                                condidats2_under_60, selected_waiting_young = save_male_waiting(
+                                    last_male_condidat,
+                                    condidats2_under_60,
+                                    selected_waiting_young
                                 )
-                                condidats2_under_60 = list(filter(lambda candidat: candidat["id"] != mahram.id, condidats2_under_60))
-
-
-                if condidats2_under_60:                           
-                    while len(selected_waiting_young) < nombre_young1 and len(condidats2_under_60) > 0:
-                        selected_condidat = random.choice(condidats2_under_60)
-                        if selected_condidat.user.gender == 'M':
-                            condidats2_under_60, selected_waiting_young = save_male_waiting(
+                        else:
+                            condidats2_under_60, selected_waiting_young, mahram = save_female_waiting(
                                 selected_condidat,
                                 condidats2_under_60,
                                 selected_waiting_young
                             )
-                            
-                        elif selected_condidat.user.gender == 'F':
-                            if len(selected_waiting_young) == nombre_young1 - 1:
-                                left_males = [condidat for condidat in condidats2_under_60 if condidat.user.gender == 'M']
-                                if len(left_males) > 0:
-                                    last_male_condidat = random.choice(left_males)
-                                    condidats2_under_60, selected_waiting_young = save_male_waiting(
-                                        last_male_condidat,
-                                        condidats2_under_60,
-                                        selected_waiting_young
-                                    )
-                            else:
-                                condidats2_under_60, selected_waiting_young, mahram = save_female_waiting(
-                                    selected_condidat,
-                                    condidats2_under_60,
-                                    selected_waiting_young
-                                )
-                                condidats2_over_60 = list(filter(lambda candidat: candidat["id"] != mahram.id, condidats2_over_60))
+                            condidats2_over_60 = list(filter(lambda candidat: candidat.user.id != mahram.id, condidats2_over_60))
 
-            if type_de_tirage == 1:
-                selected_winners = selected_winners
-                selected_waiting = selected_waiting
-            else:
-                selected_winners = selected_winners_old + selected_winners_young
-                selected_waiting = selected_waiting_old + selected_waiting_young
+        if type_de_tirage == 1:
+            selected_winners = selected_winners
+            selected_waiting = selected_waiting
+        else:
+            selected_winners = selected_winners_old + selected_winners_young
+            selected_waiting = selected_waiting_old + selected_waiting_young
 
-            return Response({'winners': selected_winners}, status=200)
-
-    except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        return Response({'winners': selected_winners, 'nombre_de_place': number_of_winners_needed}, status=200)
 
 @api_view(['GET'])
 @renderer_classes([JSONRenderer])

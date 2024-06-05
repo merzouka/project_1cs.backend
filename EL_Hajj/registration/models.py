@@ -54,7 +54,7 @@ class Haaj(models.Model):
     maahram_id = models.PositiveIntegerField(null=True , default=None)
 
     def __str__(self):
-        return self.email
+        return f'{self.id}'
 
 def save(self, *args, **kwargs):
         if self.user.gender == 'F':      
