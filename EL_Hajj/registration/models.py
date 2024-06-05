@@ -73,7 +73,6 @@ class Tirage(models.Model):
     tranche_age=models.IntegerField(default=60, null=True)
     nombre_waiting=models.IntegerField(default=0, null=True)
     tirage_fini=models.BooleanField(default=False)
-    tirage_défini=models.BooleanField(default=False)
         
 class Baladiya(models.Model):
     name = models.CharField(max_length=100)
