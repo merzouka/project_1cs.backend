@@ -54,7 +54,7 @@ class Haaj(models.Model):
     maahram_id = models.PositiveIntegerField(null=True , default=None)
 
     def __str__(self):
-        return self.email
+        return f'{self.id}'
 
 def save(self, *args, **kwargs):
         if self.user.gender == 'F':      
@@ -73,7 +73,6 @@ class Tirage(models.Model):
     tranche_age=models.IntegerField(default=60, null=True)
     nombre_waiting=models.IntegerField(default=0, null=True)
     tirage_fini=models.BooleanField(default=False)
-    tirage_défini=models.BooleanField(default=False)
         
 class Baladiya(models.Model):
     name = models.CharField(max_length=100)
