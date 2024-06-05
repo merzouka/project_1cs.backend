@@ -169,20 +169,8 @@ def login_user(request):
                 request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
-            
-            if u.role == "user":
-                resp["message"] = "Welcome, user"
-            elif u.role == "administrateur" :
-                resp["message"] = "Welcome, administrateur!"
-            else : 
-                resp["message"] = "Welcome, medecin!"
-            
-            
                 
             return Response(resp,status=200)
-            # if u.is_email_verified:
-            # else:
-            #     return Response({'message':'email is not verified'},status=400)
             
         else:
             return Response({'error': 'Invalid email or password'}, status=401)
@@ -246,8 +234,8 @@ def get_user_info(request,email):
             
     else : 
         return JsonResponse({'error':'methode not allowed'},status=405)
-        
-        
+
+
 @api_view(["PATCH"])       
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
@@ -258,7 +246,7 @@ def update_profile(request):
     serializer = userSerializer(user_instance, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        url = user_instance.personal_picture.metadata["secure_url"]
+        url = user_instance.personal_picture.metadata["secure_url"] if user_instance.personal_picture != None else None
         response = serializer.data
         response["personal_picture"] = url
         return Response(response)
@@ -273,6 +261,7 @@ def get_currently_logged_user(request):
     if request.user.is_authenticated :
         current_user = user.objects.get(email=request.user.email)
         user_info = {
+            'id': current_user.id,
             'first_name' : current_user.first_name,
             'last_name' : current_user.last_name,
             'phone' : current_user.phone,
@@ -283,7 +272,7 @@ def get_currently_logged_user(request):
             'dateOfBirth' : current_user.dateOfBirth,
             'role' : current_user.role,
             'is_email_verified' : current_user.is_email_verified,
-            'personal_picture': current_user.personal_picture.url,
+            'personal_picture': current_user.personal_picture.url if current_user.personal_picture != None else None,
         }
         return Response(user_info, status=200)
 
