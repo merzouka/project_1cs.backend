@@ -99,72 +99,72 @@ def role_baladiyet_assignement(request):
     except u.DoesNotExist:
         return Response({'error':'user not found'})
     
-  
+
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
-def users_by_role_wilaya_baladiya(request):
+def users_role_wilaya(request):
+    print("view")
     user_role = request.GET.get('user_role')  
-    role_baladiya = request.GET.get('user_baladiya')
     role_wilaya = request.GET.get('user_wilaya')
     
     print("user_role:", user_role)
-    print("role_baladiya:", role_baladiya)
     print("role_wilaya:", role_wilaya)
-
+    
+    if role_wilaya:
+        try:
+            role_wilaya = int(role_wilaya)
+        except ValueError:
+            return Response({'error': 'Invalid role_wilaya value'}, status=400)
     
     serialized_users = []
-    
     if user_role : 
         users = user.objects.filter(role=user_role)
         
     else:
         users = user.objects.all()
+        
+        
     for u in users:
-        baladiyets_names = []
-        baladiyets_wilaya = []
-        
+        baladiyets_ids = []
+        wilaya_ids = []
+            
+            
         if u.role in ["user", "hedj"] : 
-                baladiyets_names = [u.city]
-                baladiyets_wilaya = [u.province]
+            baladiyets_ids = []
+            wilaya_ids = [u.province]
+            
+            if role_wilaya and role_wilaya !=u.province :
+                continue
                 
-                if role_wilaya and role_wilaya !=u.province :
-                    continue
-                        
-                if role_baladiya and role_baladiya!=u.city:
-                    continue
-                          
+                
         else :
-            baladiyets = Baladiya.objects.filter(id_utilisateur=u.id) 
-        
-            if role_wilaya or role_baladiya:
-                if role_wilaya :
-                    baladiyets = baladiyets.filter(wilaya=role_wilaya)
+            baladiyets = Baladiya.objects.filter(id_utilisateur=u.id)
                 
-                if role_baladiya:
-                    baladiyets = baladiyets.filter(name__iexact=role_baladiya)     
                 
-            baladiyets_names = [
-                baladiya.name for baladiya in baladiyets
+            if role_wilaya :
+                baladiyets = baladiyets.filter(wilaya=role_wilaya) 
+                    
+                    
+            baladiyets_ids = [
+                baladiya.id for baladiya in baladiyets
                 ]
-            baladiyets_wilaya = [
+                
+            wilaya_ids = [
                 list(set(baladiya.wilaya for baladiya in baladiyets))
                     ]
-        
-        
-        if not(baladiyets_wilaya) or not(baladiyets_names):
-            continue
             
-            
-            
+            if role_wilaya and [role_wilaya] not in wilaya_ids:
+                continue
+                
+         
         serialized_user = {
                 'id': u.id,
                 'email': u.email,
                 'role': u.role,
-                'wilaya':baladiyets_wilaya,
-                "baladiyets":baladiyets_names
+                'wilaya':wilaya_ids,
+                "baladiyets":baladiyets_ids
             }
         serialized_users.append(serialized_user)
-        
         
     paginator = Paginator(serialized_users,10)
     page_number = request.GET.get('page')
@@ -176,8 +176,10 @@ def users_by_role_wilaya_baladiya(request):
         'current_page': page_obj.number,
         'users_per_page': paginator.per_page,
         'total_users': paginator.count
-    }, 'users':serialized_page})
-         
+    }, 'users':serialized_page})     
+                
+            
+        
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -351,6 +353,72 @@ def delete_vol_hotel_association(request):
     return Response({"message": "association deleted"})
     
 
+
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
+def list_hotel(request):
+    hotels = Hotel.objects.all()
+    serialized_hotels=[]
+
+    
+    for h in hotels:
+        serialized_hotel = {
+        "nom":h.nom,
+        "adress":h.adress
+    }
+        
+        serialized_hotels.append(serialized_hotel)
+        
+    
+    
+    paginator = Paginator(serialized_hotels,10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    serialized_page = [{"users":page_obj.object_list}]
+    
+    return JsonResponse({'pagination_info':{
+        'total_pages': paginator.num_pages,
+        'current_page': page_obj.number,
+        'hotels_per_page': paginator.per_page,
+        'total_hotels': paginator.count
+    }, 'users':serialized_page})
+    
+  
+@api_view(["GET"])
+@renderer_classes([JSONRenderer])
+def list_vole(request):
+    voles= Vole.objects.all()
+    serialized_voles=[]
+
+    
+    for v in voles:
+        serialized_vole= {
+        "nom":v.nom,
+        "aeroport":v.aeroprt,
+        "heure_depart":v.heur_depart,
+        "heure_arrivee":v.heur_arrivee,
+        "date_arrivee":v.date_arrivee,
+        "date_depart":v.date_depart,
+        "nombre_de_places":v.nb_places
+    }
+        
+        serialized_voles.append(serialized_vole)
+        
+    
+    
+    paginator = Paginator(serialized_voles,10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    serialized_page = [{"users":page_obj.object_list}]
+    
+    return JsonResponse({'pagination_info':{
+        'total_pages': paginator.num_pages,
+        'current_page': page_obj.number,
+        'voles_per_page': paginator.per_page,
+        'total_voles': paginator.count
+    }, 'users':serialized_page})  
+    
+    
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
 def winners_hotel_vol(request):
