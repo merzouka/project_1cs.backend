@@ -22,3 +22,5 @@ class userSerializer(serializers.ModelSerializer):
             'winning_date',
             'personal_picture'
         ]
+
+        extra_kwargs = { 'password': { 'write_only': True } }
