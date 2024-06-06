@@ -381,30 +381,17 @@ def list_vole(request):
     
     for v in voles:
         serialized_vole= {
-        "nom":v.nom,
-        "aeroport":v.aeroprt,
-        "heure_depart":v.heur_depart,
-        "heure_arrivee":v.heur_arrivee,
-        "date_arrivee":v.date_arrivee,
-        "date_depart":v.date_depart,
-        "nombre_de_places":v.nb_places
-    }
-        
+            "nom":v.nom,
+            "aeroport":v.aeroprt,
+            "heure_depart":v.heur_depart,
+            "heure_arrivee":v.heur_arrivee,
+            "date_arrivee":v.date_arrivee,
+            "date_depart":v.date_depart,
+            "nombre_de_places":v.nb_places
+        }
         serialized_voles.append(serialized_vole)
         
-    
-    
-    paginator = Paginator(serialized_voles,10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    serialized_page = [{"users":page_obj.object_list}]
-    
-    return JsonResponse({'pagination_info':{
-        'total_pages': paginator.num_pages,
-        'current_page': page_obj.number,
-        'voles_per_page': paginator.per_page,
-        'total_voles': paginator.count
-    }, 'users':serialized_page})  
+    return Response(serialized_voles)
     
     
 @api_view(["GET"])
