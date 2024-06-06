@@ -20,9 +20,12 @@ def user_list(request):
     role = request.GET.get('role')
     province = request.GET.get('province')
     city = request.GET.get('city')
+    query = request.GET.get('query')
     print(type(province))
     users_list = user.objects.all()
 
+    if query:
+        users_list = users_list.filter(email__like=query)
     if role:
         users_list = users_list.filter(role=role)
     if city:
