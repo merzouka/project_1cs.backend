@@ -22,12 +22,15 @@ def user_list(request):
     role = request.GET.get('role')
     province = request.GET.get('province')
     city = request.GET.get('city')
+    print(type(province))
     users_list = user.objects.all()
 
-    if not role:
-        users_list.filter(role=role)
-
-    # add province and city filters
+    if role:
+        users_list = users_list.filter(role=role)
+    if city:
+        users_list = users_list.filter(baladiyas__id=city)
+    if province and not city:
+        users_list = users_list.filter(baladiyas__wilaya=province)
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
@@ -37,31 +40,13 @@ def user_list(request):
         'id': u.id,
         'email': u.email,
         'role': u.role,
-        'wilaya':u.province,
+        'provinces':u.baladiyas.values_list('wilaya', flat=True),
+        'cities': u.baladiyas.values_list('id', flat=True),
     }for u in users] if users else []
     
     return paginator.get_paginated_response(serialized_user)
-
-@api_view(["GET"])
-@renderer_classes([JSONRenderer])
-def search_user(request,email):
-    try:
-        u = user.objects.get(email__iexact=email)
-            
-        serialized_user = {
-            'id': u.id,
-            'email': u.email,
-            'role': u.role,
-            'wilaya':u.province,
-        }
-        return Response({'user':serialized_user})
-        
-            
-    except user.DoesNotExist:
-            return Response({'error':'user not found'})
  
- 
-@api_view(["PATCH"])       
+@api_view(["PATCH"])
 @renderer_classes([JSONRenderer])
 def role_baladiyet_assignement(request):
     try :
@@ -253,7 +238,7 @@ def delete_baladiya_role_assignement(request):
     
     except u.DoesNotExist:
         return Response({"error":"user not existe"})
-            
+
 @api_view(["POST"]) 
 @renderer_classes([JSONRenderer])      
 def add_hotel(request):
