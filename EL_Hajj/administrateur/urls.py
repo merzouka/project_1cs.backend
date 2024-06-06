@@ -4,13 +4,10 @@ from .views import associate_winner_vol_hotel
 
 urlpatterns = [
     path('users',views.user_list),
-    path('administrateur/assigne-role-baladiyet/',views.role_baladiyet_assignement),
-    path("administrateur/search-role-wilaya",views.users_role_wilaya),
-    path("administrateur/delete-assignement",views.delete_baladiya_role_assignement),
+    path('user/privilege',views.role_baladiyet_assignement),
     path("administrateur/add-vole",views.add_vol),
     path("administrateur/add-hotel",views.add_hotel),
     path("administrateur/associate-vol-hotel-hedj",associate_winner_vol_hotel),
-    path("administrateur/responsable_users",views.responsable_users),
     path("administrateur/winners-list",views.winners_list),
     path("administrateur/delete-vol-hotel-association",views.delete_vol_hotel_association),
     path("administrateur/winners-list-vol-hotel",views.winners_hotel_vol),

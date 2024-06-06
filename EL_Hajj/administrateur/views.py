@@ -21,10 +21,10 @@ def user_list(request):
     province = request.GET.get('province')
     city = request.GET.get('city')
     query = request.GET.get('query')
-    users_list = user.objects.all()
+    users_list = user.objects.exclude(role='Hedj')
 
     if query:
-        users_list = users_list.filter(email__like=query)
+        users_list = users_list.filter(email__contains=query)
     if role:
         users_list = users_list.filter(role=role)
     if city:
@@ -52,109 +52,29 @@ def user_list(request):
 @renderer_classes([JSONRenderer])
 def role_baladiyet_assignement(request):
     try :
-        user_id = request.data.get('user_id')
+        user_id = request.data.get('id')
+        user_role = request.data.get('role')
+        chosen_baladiya = request.data.get('cities')
         u = user.objects.get(id=user_id)
-        user_role = request.data.get('user_role')
         u.role = user_role
+        u.baladiya_set.set(Baladiya.objects.filter(id__in=chosen_baladiya))
         u.save()
-        
-        chosen_baladiya = request.data.get('chosen_baladiya')
-        existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
-        
-        baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
 
-        for baladiya in baladiyets:
-            baladiya.id_utilisateur.add(u)
-
-        for baladiya in existing_baladiyats:
-            if baladiya not in baladiyets:
-                baladiya.id_utilisateur.remove(u)
-            
+        # 
+        # existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
+        # 
+        # baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
+        #
+        # for baladiya in baladiyets:
+        #     baladiya.id_utilisateur.add(u)
+        #
+        # for baladiya in existing_baladiyats:
+        #     if baladiya not in baladiyets:
+        #         baladiya.id_utilisateur.remove(u)
+        #     
         return Response({'message':'association done'})
     except u.DoesNotExist:
         return Response({'error':'user not found'})
-    
-
-@api_view(["GET"])
-@renderer_classes([JSONRenderer])
-def users_role_wilaya(request):
-    print("view")
-    user_role = request.GET.get('user_role')  
-    role_wilaya = request.GET.get('user_wilaya')
-    
-    print("user_role:", user_role)
-    print("role_wilaya:", role_wilaya)
-    
-    if role_wilaya:
-        try:
-            role_wilaya = int(role_wilaya)
-        except ValueError:
-            return Response({'error': 'Invalid role_wilaya value'}, status=400)
-    
-    serialized_users = []
-    if user_role : 
-        users = user.objects.filter(role=user_role)
-        
-    else:
-        users = user.objects.all()
-        
-        
-    for u in users:
-        baladiyets_ids = []
-        wilaya_ids = []
-            
-            
-        if u.role in ["user", "hedj"] : 
-            baladiyets_ids = []
-            wilaya_ids = [u.province]
-            
-            if role_wilaya and role_wilaya !=u.province :
-                continue
-                
-                
-        else :
-            baladiyets = Baladiya.objects.filter(id_utilisateur=u.id)
-                
-                
-            if role_wilaya :
-                baladiyets = baladiyets.filter(wilaya=role_wilaya) 
-                    
-                    
-            baladiyets_ids = [
-                baladiya.id for baladiya in baladiyets
-                ]
-                
-            wilaya_ids = [
-                list(set(baladiya.wilaya for baladiya in baladiyets))
-                    ]
-            
-            if role_wilaya and [role_wilaya] not in wilaya_ids:
-                continue
-                
-         
-        serialized_user = {
-                'id': u.id,
-                'email': u.email,
-                'role': u.role,
-                'wilaya':wilaya_ids,
-                "baladiyets":baladiyets_ids
-            }
-        serialized_users.append(serialized_user)
-        
-    paginator = Paginator(serialized_users,10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    serialized_page = [{"users":page_obj.object_list}]
-    
-    return JsonResponse({'pagination_info':{
-        'total_pages': paginator.num_pages,
-        'current_page': page_obj.number,
-        'users_per_page': paginator.per_page,
-        'total_users': paginator.count
-    }, 'users':serialized_page})     
-                
-            
-        
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -205,42 +125,6 @@ def winners_list(request):
     
     return JsonResponse({'users':data})
     
-    
-    
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-def delete_baladiya_role_assignement(request):
-    user_id = request.data.get('user_id') 
-    try:
-        u = user.objects.get(id=user_id)
-        baladiyet_to_delete = Baladiya.objects.filter(id_utilisateur=user_id)
-        
-        chosen_baladiya = request.data.get('chosen_baladiya')
-        chosen_wilaya = request.data.get('chosen_wilaya') 
-        
-        if chosen_wilaya:
-            baladiyet_to_delete = baladiyet_to_delete.filter(wilaya=chosen_wilaya) 
-            for baladiya in baladiyet_to_delete :
-                baladiya.id_utilisateur.remove(u) 
-                
-        elif chosen_baladiya:
-            baladiyet_to_delete = baladiyet_to_delete.filter(name__iexact=chosen_baladiya) 
-            for baladiya in baladiyet_to_delete :
-                baladiya.id_utilisateur.remove(u)
-            
-        else:
-            return Response({"error":"invalide input"})
-        
-        rest_baladiyet_count = Baladiya.objects.filter(id_utilisateur=user_id).count()
-        if rest_baladiyet_count == 0:
-            u.role = "user"
-            u.save()
-        
-        return Response({"message":"association deleted"})
-    
-    except u.DoesNotExist:
-        return Response({"error":"user not existe"})
-
 @api_view(["POST"]) 
 @renderer_classes([JSONRenderer])      
 def add_hotel(request):
@@ -420,27 +304,4 @@ def winners_hotel_vol(request):
     
     return JsonResponse(response_data)
 
-
-
-  
-@api_view(["GET"])
-@renderer_classes([JSONRenderer])
-def responsable_users(request):
-    user_id = request.data.get('user_id')
-    user_ = get_object_or_404(user,id=user_id)
-    
-    associated_baladiyas = Baladiya.objects.filter(id_utilisateur=user_.id)
-    
-    baladiya_names = associated_baladiyas.values_list('name',flat=True)
-    
-    users_in_baladiyas = user.objects.filter(baladiya__name__in=baladiya_names).distinct()
-    serialized_users = [{
-        'id': user.id,
-        'email': user.email,
-        'role': user.role,
-        'city': user.city,
-        'province': user.province
-    } for user in users_in_baladiyas]
-    
-    return Response({'users': serialized_users})
 
