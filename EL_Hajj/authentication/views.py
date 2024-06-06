@@ -169,15 +169,7 @@ def login_user(request):
                 request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
-            
-            if u.role == "user":
-                resp["message"] = "Welcome, user"
-            elif u.role == "administrateur" :
-                resp["message"] = "Welcome, administrateur!"
-            else : 
-                resp["message"] = "Welcome, medecin!"
-            
-            
+            resp["personal_picture"] = u.personal_picture.url if u.personal_picture != None else None            
                 
             return Response(resp,status=200)
             # if u.is_email_verified:
