@@ -21,7 +21,6 @@ def user_list(request):
     province = request.GET.get('province')
     city = request.GET.get('city')
     query = request.GET.get('query')
-    print(type(province))
     users_list = user.objects.all()
 
     if query:
