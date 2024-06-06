@@ -169,6 +169,7 @@ def login_user(request):
                 request.session.set_expiry(0)
             resp = userSerializer(u).data
             resp["id"] = u.id
+            resp["personal_picture"] = u.personal_picture.url if u.personal_picture != None else None            
                 
             return Response(resp,status=200)
             
