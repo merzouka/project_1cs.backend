@@ -13,8 +13,6 @@ from django.shortcuts import get_object_or_404
 from .models import Vole,Hotel
 from rest_framework.renderers import JSONRenderer
 
-# Create your views here.
-
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -28,9 +26,9 @@ def user_list(request):
     if role:
         users_list = users_list.filter(role=role)
     if city:
-        users_list = users_list.filter(baladiyas__id=city)
+        users_list = users_list.filter(baladiya__id=city)
     if province and not city:
-        users_list = users_list.filter(baladiyas__wilaya=province)
+        users_list = users_list.filter(baladiya__wilaya=province)
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
@@ -39,10 +37,12 @@ def user_list(request):
     serialized_user = [{
         'id': u.id,
         'email': u.email,
+        'firstName': u.first_name,
+        'lastName' : u.last_name,
         'role': u.role,
-        'provinces':u.baladiyas.values_list('wilaya', flat=True),
-        'cities': u.baladiyas.values_list('id', flat=True),
-    }for u in users] if users else []
+        'provinces':u.baladiya_set.values_list('wilaya', flat=True).distinct(),
+        'cities': u.baladiya_set.values_list('id', flat=True),
+    } for u in users] if users else []
     
     return paginator.get_paginated_response(serialized_user)
  
