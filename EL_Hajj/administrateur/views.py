@@ -60,18 +60,6 @@ def role_baladiyet_assignement(request):
         u.baladiya_set.set(Baladiya.objects.filter(id__in=chosen_baladiya))
         u.save()
 
-        # 
-        # existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
-        # 
-        # baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
-        #
-        # for baladiya in baladiyets:
-        #     baladiya.id_utilisateur.add(u)
-        #
-        # for baladiya in existing_baladiyats:
-        #     if baladiya not in baladiyets:
-        #         baladiya.id_utilisateur.remove(u)
-        #     
         return Response({'message':'association done'})
     except u.DoesNotExist:
         return Response({'error':'user not found'})
