@@ -1,12 +1,13 @@
 from django.shortcuts import render
 # from django.core.paginator import Paginator
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from authentication.models import user
 from rest_framework.response import Response
 from registration.models import Baladiya
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, permission_classes, renderer_classes
 from django.http import JsonResponse
 from .serializers import hotelSerializer,voleSerializer
 from django.shortcuts import get_object_or_404
@@ -16,21 +17,39 @@ from rest_framework.renderers import JSONRenderer
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
 def user_list(request):
     role = request.GET.get('role')
     province = request.GET.get('province')
     city = request.GET.get('city')
     query = request.GET.get('query')
-    users_list = user.objects.exclude(role='Hedj')
+    users_list = user.objects.exclude(role='Hedj').exclude(email=request.user.email)
 
     if query:
         users_list = users_list.filter(email__contains=query)
     if role:
         users_list = users_list.filter(role=role)
-    if city:
-        users_list = users_list.filter(baladiya__id=city)
+    if province and city:
+        users_list = users_list.filter(baladiya__id=city) | users_list.filter(province=province).filter(city=Baladiya.objects.get(id=city).name)
     if province and not city:
-        users_list = users_list.filter(baladiya__wilaya=province)
+        users_list = users_list.filter(baladiya__wilaya=province) | users_list.filter(province=province)
+
+    user_ids = users_list.values_list('id', flat=True)
+    users_list = []
+
+    user_cities = request.user.baladiya_set
+    user_city_ids = user_cities.values_list('id', flat=True)
+    manager_user_ids = Baladiya.objects.filter(
+        id__in=user_city_ids
+    ).filter(
+        id_utilisateur__id__in=user_ids
+    ).values_list('id_utilisateur__id', flat=True).distinct()
+
+    normal_user_ids = []
+    for city in user_cities.all():
+        normal_user_ids.extend(user.objects.filter(province=city.wilaya).filter(city=city.name).filter(id__in=user_ids).values_list('id', flat=True))
+
+    users_list = user.objects.filter(id__in=set(list(manager_user_ids) + normal_user_ids))
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
