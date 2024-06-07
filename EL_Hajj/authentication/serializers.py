@@ -7,6 +7,7 @@ class userSerializer(serializers.ModelSerializer):
         model = user
         fields = [
             'email',
+            'password',
             'is_email_verified',
             'first_name',
             'last_name',
@@ -21,3 +22,5 @@ class userSerializer(serializers.ModelSerializer):
             'winning_date',
             'personal_picture'
         ]
+
+        extra_kwargs = { 'password': { 'write_only': True } }
