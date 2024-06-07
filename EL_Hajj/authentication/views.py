@@ -7,7 +7,7 @@ from authentication.serializers import userSerializer
 from .models import PasswordReset, user
 from rest_framework import status
 from django.shortcuts import get_object_or_404,render
-from registration.models import Baladiya
+from registration.models import Baladiya, Haaj, Winners
 from rest_framework.decorators import api_view, parser_classes, renderer_classes, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
@@ -17,6 +17,38 @@ from django.contrib.auth import logout, login ,get_user_model,authenticate
 from django.urls import reverse 
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
+
+
+def get_user_status(u: user):
+    if u.role != "Hedj":
+        return None
+    haaj = None
+    try:
+        haaj = Haaj.objects.get(user=u)
+    except Haaj.DoesNotExist:
+        haaj = None
+
+    winner = None
+    try:
+        winner = Winners.objects.get(nin=u.id)
+    except Winners.DoesNotExist:
+        winner = None
+
+    registered = haaj != None
+    drawing = u.role == "Hedj" and winner != None
+    appointment = drawing and winner != None and winner.visite
+    payment = appointment and winner != None and winner.payement
+    booking = payment and winner != None and winner.hotel_set.count() > 0 and winner.vole_set.count() > 0
+
+    return {
+        'registration': registered if registered else None if drawing else False,
+        'drawing': drawing,
+        'appointment': appointment,
+        'payment': payment,
+        'booking': booking,
+        'done': booking,
+    }
+
 
 
 @api_view(["POST"])
@@ -170,6 +202,7 @@ def login_user(request):
             resp = userSerializer(u).data
             resp["id"] = u.id
             resp["personal_picture"] = u.personal_picture.url if u.personal_picture != None else None            
+            resp["status"] = get_user_status(u)
                 
             return Response(resp,status=200)
             
@@ -252,15 +285,27 @@ def update_profile(request):
         response["personal_picture"] = url
         return Response(response)
     return Response({ "errors": serializer.errors }, 400)
+
         
     
-
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
 @permission_classes([IsAuthenticated])
 def get_currently_logged_user(request):
     if request.user.is_authenticated :
-        current_user = user.objects.get(email=request.user.email)
+        current_user = request.user
+        haaj = None
+        try:
+            haaj = Haaj.objects.get(user=current_user)
+        except Haaj.DoesNotExist:
+            haaj = None
+
+        winner = None
+        try:
+            winner = Winners.objects.get(nin=current_user.id)
+        except Winners.DoesNotExist:
+            winner = None
+
         user_info = {
             'id': current_user.id,
             'first_name' : current_user.first_name,
@@ -274,6 +319,7 @@ def get_currently_logged_user(request):
             'role' : current_user.role,
             'is_email_verified' : current_user.is_email_verified,
             'personal_picture': current_user.personal_picture.url if current_user.personal_picture != None else None,
+            'status': get_user_status(current_user),
         }
         return Response(user_info, status=200)
 
