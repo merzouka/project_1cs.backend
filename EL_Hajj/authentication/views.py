@@ -35,13 +35,13 @@ def get_user_status(u: user):
         winner = None
 
     registered = haaj != None
-    drawing = u.role == "Hedj" and winner != None
-    appointment = drawing and winner != None and winner.visite
-    payment = appointment and winner != None and winner.payement
-    booking = payment and winner != None and winner.hotel_set.count() > 0 and winner.vole_set.count() > 0
+    drawing = True if u.role == "Hedj" and winner != None else None
+    appointment = True if u.role == "Hedj" and winner != None and winner.visite else None
+    payment = True if u.role == "Hedj" and winner != None and winner.visite and winner.payement else None
+    booking = True if u.role == "Hedj" and winner != None and winner.visite and winner.payement and winner.hotel_set.count() > 0 and winner.vole_set.count() > 0 else None
 
     return {
-        'registration': registered if registered else None if drawing else False,
+        'registration': registered if registered else None if u.role == "Hedj" and winner != None else False,
         'drawing': drawing,
         'appointment': appointment,
         'payment': payment,
