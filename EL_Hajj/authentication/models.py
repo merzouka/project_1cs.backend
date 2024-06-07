@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-from cloudinary.models import CloudinaryField # type: ignore
+from cloudinary.models import CloudinaryField
 
 PROVINCES = [
     (1, 'Wilaya d''Adrar'),
@@ -113,7 +113,7 @@ class user(AbstractBaseUser):
     objects = userManager()
 
     def __str__(self):
-        return self.email   
+        return self.id
 
     
 
