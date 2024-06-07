@@ -50,6 +50,7 @@ def registration(request):
             authenticated_user.nombreInscription += 1
             authenticated_user.role = "Hedj"
             authenticated_user.save()
+            haaj_serializer.save()
             return Response("Success", status=status.HTTP_201_CREATED)
         return Response(haaj_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
