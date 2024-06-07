@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -18,15 +18,9 @@ from rest_framework.renderers import JSONRenderer
 from django.shortcuts import render
 import random 
 from django.utils import timezone
-import datetime
 from registration.serializers import WinnersSerializer
 
 from django.core.exceptions import ObjectDoesNotExist
-
-
-
-
-
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -46,18 +40,15 @@ def registration(request):
     elif request.method == 'POST':
         if authenticated_user.winner:
             last_winning_date = authenticated_user.winning_date
-            ten_years_ago = datetime.now() - datetime.timedelta(days=365 * 10)
+            ten_years_ago = datetime.now() - timedelta(days=365 * 10)
             if last_winning_date > ten_years_ago:
                 return Response("You cannot register for the draw as you have won in the last 10 years.", status=status.HTTP_400_BAD_REQUEST)
         
         serializer_data = request.data.copy() 
         haaj_serializer = HaajSerializer(data=serializer_data, context={'request': request})
         if haaj_serializer.is_valid():
-            haaj_instance = haaj_serializer.save()
-            authenticated_user.winner = True
             authenticated_user.nombreInscription += 1
-            authenticated_user.winning_date = timezone.now() 
-            authenticated_user.role = "hedj"
+            authenticated_user.role = "Hedj"
             authenticated_user.save()
             return Response("Success", status=status.HTTP_201_CREATED)
         return Response(haaj_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
