@@ -229,25 +229,12 @@ def list_hotel(request):
     
     for h in hotels:
         serialized_hotel = {
-        "nom":h.nom,
-        "adress":h.adress
-    }
-        
+            "nom":h.nom,
+            "address":h.adress
+        }
         serialized_hotels.append(serialized_hotel)
         
-    
-    
-    paginator = Paginator(serialized_hotels,10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    serialized_page = [{"users":page_obj.object_list}]
-    
-    return JsonResponse({'pagination_info':{
-        'total_pages': paginator.num_pages,
-        'current_page': page_obj.number,
-        'hotels_per_page': paginator.per_page,
-        'total_hotels': paginator.count
-    }, 'users':serialized_page})
+    return Response(serialized_hotels)
     
   
 @api_view(["GET"])
