@@ -469,20 +469,20 @@ def fetch_winners(request):
 @api_view(['GET'])
 @renderer_classes([JSONRenderer])
 def participants_tirage(request):
-    try:
-        user_instance = request.user
-        baladiyat_in_tirage = []
-        if user_instance.role == 'responsable tirage':
-            baladiyat_in_tirage = Baladiya.objects.filter(id_utilisateur=user_instance)
-        else:
-            baladiya_instance = get_object_or_404(Baladiya, name=user_instance.city, wilaya=user_instance.province)
-            baladiya_tirage_id = baladiya_instance.tirage_id
-            baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
-        serialized_data = []
+    user_instance = request.user
+    baladiyat_in_tirage = []
+    if user_instance.role == 'responsable tirage':
+        baladiyat_in_tirage = Baladiya.objects.filter(id_utilisateur=user_instance)
+    else:
+        baladiya_instance = get_object_or_404(Baladiya, name=user_instance.city, wilaya=user_instance.province)
+        baladiya_tirage_id = baladiya_instance.tirage_id
+        baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
+    serialized_data = []
 
-        for baladiya in baladiyat_in_tirage:
-            haajs_in_city = Haaj.objects.filter(user__city__iexact=baladiya.name).filter(user__province=baladiya.wilaya)
-            for haaj in haajs_in_city:
+    for baladiya in baladiyat_in_tirage:
+        haajs_in_city = Haaj.objects.filter(user__city__iexact=baladiya.name).filter(user__province=baladiya.wilaya)
+        for haaj in haajs_in_city:
+            for _ in range(haaj.user.nombreInscription):
                 haaj_data = {
                     'city': haaj.user.city,
                     'first_name': haaj.user.first_name,
@@ -490,11 +490,12 @@ def participants_tirage(request):
                     'personal_picture': haaj.user.personal_picture.url if haaj.user.personal_picture else None,
                 }
                 serialized_data.append(haaj_data)
-        
-        return Response(serialized_data, status=200)
-    
-    except Exception as e:
-        return Response({'error': str(e)}, status=500) 
+
+    return Response(serialized_data, status=200)
+    # try:
+    # 
+    # except Exception as e:
+    #     return Response({'error': str(e)}, status=500) 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_tirage_definition(request):
