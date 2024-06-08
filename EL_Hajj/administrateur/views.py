@@ -233,9 +233,11 @@ def associate_winner_vol_hotel(request):
     
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def winners_hotel_vol(request):
-    user_baladiyas = request.user.baladiya_set.all()
+    # TODO uncomment
+    # user_baladiyas = request.user.baladiya_set.all()
+    user_baladiyas = user.objects.get(id=0).baladiya_set.all()
     winners_list = Winners.objects.filter(
         nin__in=user.objects.filter(
             city__in=user_baladiyas.values_list('name', flat=True)
@@ -248,8 +250,8 @@ def winners_hotel_vol(request):
     for winner in winners_list:
         hotel_list = winner.hotel_set
         flight_list = winner.vole_set
-        hotel = hotel_list[0] if len(hotel_list) > 0 else None
-        flight = flight_list[0] if len(flight_list) > 0 else None
+        hotel = hotel_list[0] if hotel_list.count() > 0 else None
+        flight = flight_list[0] if flight_list.count() > 0 else None
         winner_user = user.objects.get(id=winner.nin)
         
         winner_data = {
