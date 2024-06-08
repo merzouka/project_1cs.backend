@@ -9,10 +9,10 @@ class voleSerializer(serializers.ModelSerializer):
             'nom',
             'aeroprt',
             'date_depart',
-    'heur_depart',
-    'date_arrivee',
-    'heur_arrivee' ,
-    'nb_places',
+            'heur_depart',
+            'date_arrivee',
+            'heur_arrivee' ,
+            'nb_places',
         ]
         
 class hotelSerializer(serializers.ModelSerializer):

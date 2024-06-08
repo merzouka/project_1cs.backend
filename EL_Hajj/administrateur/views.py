@@ -1,12 +1,13 @@
 from django.shortcuts import render
 # from django.core.paginator import Paginator
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from authentication.models import user
 from rest_framework.response import Response
 from registration.models import Baladiya
-from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.decorators import api_view, permission_classes, renderer_classes
 from django.http import JsonResponse
 from .serializers import hotelSerializer,voleSerializer
 from django.shortcuts import get_object_or_404
@@ -16,21 +17,38 @@ from rest_framework.renderers import JSONRenderer
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
 def user_list(request):
     role = request.GET.get('role')
     province = request.GET.get('province')
     city = request.GET.get('city')
     query = request.GET.get('query')
-    users_list = user.objects.exclude(role='Hedj')
-
+    users_list = user.objects.exclude(role='Hedj').exclude(email=request.user.email)
     if query:
         users_list = users_list.filter(email__contains=query)
     if role:
         users_list = users_list.filter(role=role)
-    if city:
-        users_list = users_list.filter(baladiya__id=city)
+    if province and city:
+        users_list = users_list.filter(baladiya__id=city) | users_list.filter(province=province).filter(city=Baladiya.objects.get(id=city).name)
     if province and not city:
-        users_list = users_list.filter(baladiya__wilaya=province)
+        users_list = users_list.filter(baladiya__wilaya=province) | users_list.filter(province=province)
+
+    user_ids = users_list.values_list('id', flat=True)
+    users_list = []
+
+    user_cities = request.user.baladiya_set
+    user_city_ids = user_cities.values_list('id', flat=True)
+    manager_user_ids = Baladiya.objects.filter(
+        id__in=user_city_ids
+    ).filter(
+        id_utilisateur__id__in=user_ids
+    ).values_list('id_utilisateur__id', flat=True).distinct()
+
+    normal_user_ids = []
+    for city in user_cities.all():
+        normal_user_ids.extend(user.objects.filter(province=city.wilaya).filter(city=city.name).filter(id__in=user_ids).values_list('id', flat=True))
+
+    users_list = user.objects.filter(id__in=set(list(manager_user_ids) + normal_user_ids))
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
@@ -56,22 +74,15 @@ def role_baladiyet_assignement(request):
         user_role = request.data.get('role')
         chosen_baladiya = request.data.get('cities')
         u = user.objects.get(id=user_id)
+
+        common_resp_users = Baladiya.objects.filter(id__in=chosen_baladiya).filter(id_utilisateur__role=user_role).values('id_utilisateur')
+        if len(common_resp_users) > 0:
+            return Response({ "message": "responsibility already assigned.", "responsable": user.objects.get(id=common_resp_users[0]['id_utilisateur']).email }, 400)
+
         u.role = user_role
         u.baladiya_set.set(Baladiya.objects.filter(id__in=chosen_baladiya))
         u.save()
 
-        # 
-        # existing_baladiyats = Baladiya.objects.filter(id_utilisateur=u)
-        # 
-        # baladiyets = Baladiya.objects.filter(id__in=chosen_baladiya)
-        #
-        # for baladiya in baladiyets:
-        #     baladiya.id_utilisateur.add(u)
-        #
-        # for baladiya in existing_baladiyats:
-        #     if baladiya not in baladiyets:
-        #         baladiya.id_utilisateur.remove(u)
-        #     
         return Response({'message':'association done'})
     except u.DoesNotExist:
         return Response({'error':'user not found'})
@@ -222,25 +233,12 @@ def list_hotel(request):
     
     for h in hotels:
         serialized_hotel = {
-        "nom":h.nom,
-        "adress":h.adress
-    }
-        
+            "nom":h.nom,
+            "address":h.adress
+        }
         serialized_hotels.append(serialized_hotel)
         
-    
-    
-    paginator = Paginator(serialized_hotels,10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    serialized_page = [{"users":page_obj.object_list}]
-    
-    return JsonResponse({'pagination_info':{
-        'total_pages': paginator.num_pages,
-        'current_page': page_obj.number,
-        'hotels_per_page': paginator.per_page,
-        'total_hotels': paginator.count
-    }, 'users':serialized_page})
+    return Response(serialized_hotels)
     
   
 @api_view(["GET"])
