@@ -6,7 +6,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from authentication.models import user
 from rest_framework.response import Response
-from registration.models import Baladiya
+from registration.models import Baladiya, Winners
 from rest_framework.decorators import api_view, permission_classes, renderer_classes
 from django.http import JsonResponse
 from .serializers import hotelSerializer,voleSerializer
@@ -160,69 +160,6 @@ def add_vol(request):
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=404)            
 
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-def associate_winner_vol_hotel(request):
-    winner_id = request.data.get('winner_id')
-    vol_id = request.data.get('vol_id')
-    hotel_id = request.data.get('hotel_id')
-
-    try:
-        winner = get_object_or_404(Winners, nin=winner_id)
-    except Exception as e:
-        return Response({"message": "Winner not found"}, status=404)
-    
-    if hotel_id:
-        try:
-            hotel_ = get_object_or_404(Hotel, id=hotel_id)
-            hotel_.winner_id.add(winner.nin)
-        except Exception as e:
-            return Response({"message": "Hotel not found"}, status=404)
-
-    if vol_id:
-        try:
-            vol_ = get_object_or_404(Vole, id=vol_id)
-            vol_.winner_id.add(winner.nin)
-        except Exception as e:
-            return Response({"message": "Vole not found"}, status=404)
-
-
-
-    return Response({"message": "association done"})
-    
-
-@api_view(["POST"])
-@renderer_classes([JSONRenderer])
-def delete_vol_hotel_association(request):
-    winner_id = request.data.get('winner_id')
-    vol_id = request.data.get('vol_id')
-    hotel_id = request.data.get('hotel_id')
-
-
-    try:
-        winner = get_object_or_404(Winners, nin=winner_id)
-    except Exception as e:
-        return Response({"message": "Winner not found"}, status=404)
-    
-    if hotel_id:
-        try:
-            hotel_ = get_object_or_404(Hotel, id=hotel_id)
-            hotel_.winner_id.remove(winner.nin)
-        except Exception as e:
-            return Response({"message": "Hotel not found"}, status=404)
-
-    if vol_id:
-        try:
-            vol_ = get_object_or_404(Vole, id=vol_id)
-            vol_.winner_id.remove(winner.nin)
-        except Exception as e:
-            return Response({"message": "Vole not found"}, status=404)
-
-
-
-    return Response({"message": "association deleted"})
-    
-
 
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
@@ -233,6 +170,7 @@ def list_hotel(request):
     
     for h in hotels:
         serialized_hotel = {
+            "id": h.id,
             "nom":h.nom,
             "address":h.adress
         }
@@ -250,6 +188,7 @@ def list_vole(request):
     
     for v in voles:
         serialized_vole= {
+            "id": v.id,
             "nom":v.nom,
             "aeroport":v.aeroprt,
             "heure_depart":v.heur_depart,
@@ -262,44 +201,74 @@ def list_vole(request):
         
     return Response(serialized_voles)
     
+@api_view(["POST"])
+@renderer_classes([JSONRenderer])
+def associate_winner_vol_hotel(request):
+    winner_id = request.data.get('winner_id')
+    vol_id = request.data.get('vol_id')
+    hotel_id = request.data.get('hotel_id')
+
+    try:
+        winner = get_object_or_404(Winners, nin=winner_id)
+    except Exception as e:
+        return Response({"message": "Winner not found"}, status=404)
+    
+    if hotel_id:
+        try:
+            hotel_ = get_object_or_404(Hotel, id=hotel_id)
+            winner.hotel_set.set([hotel_])
+        except Exception as e:
+            return Response({"message": "Hotel not found"}, status=404)
+
+    if vol_id:
+        try:
+            vol_ = get_object_or_404(Vole, id=vol_id)
+            winner.vole_set.set([vol_])
+        except Exception as e:
+            return Response({"message": "Vole not found"}, status=404)
+
+
+
+    return Response({"message": "association done"})
     
 @api_view(["GET"])
 @renderer_classes([JSONRenderer])
+@permission_classes([IsAuthenticated])
 def winners_hotel_vol(request):
-    winners_list = Winners.objects.all()
+    user_baladiyas = request.user.baladiya_set.all()
+    winners_list = Winners.objects.filter(
+        nin__in=user.objects.filter(
+            city__in=user_baladiyas.values_list('name', flat=True)
+        ).filter(
+            province__in=user_baladiyas.values_list('wilaya', flat=True).distinct()
+        ).values_list("id", flat=True)
+    ).filter(payement=True).filter(visite=True)
     
     data = []
     for winner in winners_list:
-        hotel = Hotel.objects.filter(winner_id=winner.nin).first()
-        vole = Vole.objects.filter(winner_id=winner.nin).first()
-        
-        hotel_name = hotel.nom if hotel else "No hotel assigned"
-        vole_name = vole.nom if vole else "No vole assigned"
+        hotel_list = winner.hotel_set
+        flight_list = winner.vole_set
+        hotel = hotel_list[0] if len(hotel_list) > 0 else None
+        flight = flight_list[0] if len(flight_list) > 0 else None
+        winner_user = user.objects.get(id=winner.nin)
         
         winner_data = {
-            "nin": winner.nin,
-            "paiement":winner.payement,
-            "visite_medicale":winner.visite,
-            "vole": vole_name,
-            "hotel": hotel_name
+            "id": winner.id,
+            "email": winner_user.email,
+            "firstName": winner_user.first_name,
+            "lastName": winner_user.last_name,
+            "flight": {
+                "id": flight.id,
+                "name": flight.nom
+            } if flight != None else None,
+            "hotel": {
+                "id": hotel.id,
+                "name": hotel.nom
+            } if hotel != None else None,
         }
             
         data.append(winner_data)
     
-    page = request.GET.get('page', 1)
-    paginator = Paginator(data, 3)  # Show 10 winners per page
-    winners_page = paginator.page(page)
-    
-    response_data = {
-        'pagination_info': {
-            'total_pages': paginator.num_pages,
-            'current_page': winners_page.number,
-            'users_per_page': paginator.per_page,
-            'total_users': paginator.count,
-        },
-        'users': list(winners_page)
-    }
-    
-    return JsonResponse(response_data)
+    return Response(data)
 
 
