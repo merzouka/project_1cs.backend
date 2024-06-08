@@ -8,7 +8,7 @@ urlpatterns = [
     path("administrateur/add-vole",views.add_vol),
     path("administrateur/add-hotel",views.add_hotel),
     path("bookings/haaj",associate_winner_vol_hotel),
-    path("bookings/haaj",views.winners_hotel_vol),
+    path("bookings/hodjadj",views.winners_hotel_vol),
     path("administrateur/winners-list",views.winners_list),
     path("administrateur/hotels-list",views.list_hotel),
     path("administrateur/voles-list",views.list_vole),
