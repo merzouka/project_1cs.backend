@@ -24,7 +24,6 @@ def user_list(request):
     city = request.GET.get('city')
     query = request.GET.get('query')
     users_list = user.objects.exclude(role='Hedj').exclude(email=request.user.email)
-
     if query:
         users_list = users_list.filter(email__contains=query)
     if role:
@@ -75,6 +74,11 @@ def role_baladiyet_assignement(request):
         user_role = request.data.get('role')
         chosen_baladiya = request.data.get('cities')
         u = user.objects.get(id=user_id)
+
+        common_resp_users = Baladiya.objects.filter(id__in=chosen_baladiya).filter(id_utilisateur__role=user_role).values('id_utilisateur')
+        if len(common_resp_users) > 0:
+            return Response({ "message": "responsibility already assigned.", "responsable": user.objects.get(id=common_resp_users[0]['id_utilisateur']).email }, 400)
+
         u.role = user_role
         u.baladiya_set.set(Baladiya.objects.filter(id__in=chosen_baladiya))
         u.save()
