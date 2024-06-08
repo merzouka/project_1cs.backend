@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
@@ -18,15 +18,9 @@ from rest_framework.renderers import JSONRenderer
 from django.shortcuts import render
 import random 
 from django.utils import timezone
-import datetime
 from registration.serializers import WinnersSerializer
 
 from django.core.exceptions import ObjectDoesNotExist
-
-
-
-
-
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -46,18 +40,15 @@ def registration(request):
     elif request.method == 'POST':
         if authenticated_user.winner:
             last_winning_date = authenticated_user.winning_date
-            ten_years_ago = datetime.now() - datetime.timedelta(days=365 * 10)
+            ten_years_ago = datetime.now() - timedelta(days=365 * 10)
             if last_winning_date > ten_years_ago:
                 return Response("You cannot register for the draw as you have won in the last 10 years.", status=status.HTTP_400_BAD_REQUEST)
         
         serializer_data = request.data.copy() 
         haaj_serializer = HaajSerializer(data=serializer_data, context={'request': request})
         if haaj_serializer.is_valid():
-            haaj_instance = haaj_serializer.save()
-            authenticated_user.winner = True
             authenticated_user.nombreInscription += 1
-            authenticated_user.winning_date = timezone.now() 
-            authenticated_user.role = "hedj"
+            authenticated_user.role = "Hedj"
             authenticated_user.save()
             return Response("Success", status=status.HTTP_201_CREATED)
         return Response(haaj_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -478,20 +469,20 @@ def fetch_winners(request):
 @api_view(['GET'])
 @renderer_classes([JSONRenderer])
 def participants_tirage(request):
-    try:
-        user_instance = request.user
-        baladiyat_in_tirage = []
-        if user_instance.role == 'responsable tirage':
-            baladiyat_in_tirage = Baladiya.objects.filter(id_utilisateur=user_instance)
-        else:
-            baladiya_instance = get_object_or_404(Baladiya, name=user_instance.city, wilaya=user_instance.province)
-            baladiya_tirage_id = baladiya_instance.tirage_id
-            baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
-        serialized_data = []
+    user_instance = request.user
+    baladiyat_in_tirage = []
+    if user_instance.role == 'responsable tirage':
+        baladiyat_in_tirage = Baladiya.objects.filter(id_utilisateur=user_instance)
+    else:
+        baladiya_instance = get_object_or_404(Baladiya, name=user_instance.city, wilaya=user_instance.province)
+        baladiya_tirage_id = baladiya_instance.tirage_id
+        baladiyat_in_tirage = Baladiya.objects.filter(tirage_id=baladiya_tirage_id)
+    serialized_data = []
 
-        for baladiya in baladiyat_in_tirage:
-            haajs_in_city = Haaj.objects.filter(user__city__iexact=baladiya.name).filter(user__province=baladiya.wilaya)
-            for haaj in haajs_in_city:
+    for baladiya in baladiyat_in_tirage:
+        haajs_in_city = Haaj.objects.filter(user__city__iexact=baladiya.name).filter(user__province=baladiya.wilaya)
+        for haaj in haajs_in_city:
+            for _ in range(haaj.user.nombreInscription):
                 haaj_data = {
                     'city': haaj.user.city,
                     'first_name': haaj.user.first_name,
@@ -499,11 +490,12 @@ def participants_tirage(request):
                     'personal_picture': haaj.user.personal_picture.url if haaj.user.personal_picture else None,
                 }
                 serialized_data.append(haaj_data)
-        
-        return Response(serialized_data, status=200)
-    
-    except Exception as e:
-        return Response({'error': str(e)}, status=500) 
+
+    return Response(serialized_data, status=200)
+    # try:
+    # 
+    # except Exception as e:
+    #     return Response({'error': str(e)}, status=500) 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_tirage_definition(request):
