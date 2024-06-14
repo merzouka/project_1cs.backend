@@ -237,8 +237,7 @@ def associate_winner_vol_hotel(request):
 def winners_hotel_vol(request):
     # TODO uncomment
     # user_baladiyas = request.user.baladiya_set.all()
-    # TODO delete
-    user_baladiyas = user.objects.get(id=0).baladiya_set
+    user_baladiyas = user.objects.get(id=0).baladiya_set.all()
     winners_list = Winners.objects.filter(
         nin__in=user.objects.filter(
             city__in=user_baladiyas.values_list('name', flat=True)
